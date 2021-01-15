@@ -489,11 +489,13 @@ def print_results(results, friends, encounter_info):
     tabular = '{:<22}{:<13}{:>9}{:>12}   {:<8}{:<9}{:>7}'
     # {:>10}'
     for result in results:
-        print("{} played {} on {} at {}".format(
+        print("{} played {} on {} at {} (Duration: {:>4}s)".format(
             friends[result['source']]['name'],
             result['card'],
             friends[result['target']]['name'],
-            result['timing']))
+            result['timing'],
+            str(round(result['duration'],1))
+            ))
 
         # Get the correct target
         # correct = ''
@@ -670,6 +672,7 @@ def cardcalc(report, fight_id):
         results.append({
             'damages': corrected_damage_list,
             'timing': str(timing)[2:11],
+            'duration': timedelta(milliseconds=card['end']-card['start']).total_seconds(),
             'source': card['source'],
             'target': card['target'],
             'card': card['name'],

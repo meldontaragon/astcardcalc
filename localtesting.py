@@ -50,17 +50,9 @@ def decompose_url(url):
 report = 'jyXMVZbC94RB8ADh'
 fight = 25
 
-(friends, pets) = get_friends_and_pets(report, fight)
+# overwrite testing: https://www.fflogs.com/reports/Xta1JRmZqDTnjzM7#fight=last
+(report, fight) = decompose_url('https://www.fflogs.com/reports/Xta1JRmZqDTnjzM7#fight=last')
 
-for tick in tick_damages:
-    if tick in pets:
-        print('{} is owned by id: {}'.format(pets[tick]['name'],pets[tick]['petOwner']))
-
-# print("\n")
-# print(friends)
-# print()
-# print(pets)
-
-# (results, friends, encounter_info, cards) = cardcalc(report, fight)
-# print_results(results, friends, encounter_info)
+(results, friends, encounter_info, cards) = cardcalc(report, fight)
+print_results(results, friends, encounter_info)
 

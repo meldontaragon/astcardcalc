@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/4.0.0/superhero/bootstrap.min.css" crossorigin="anonymous">
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://bootswatch.com/4/minty/bootstrap.min.css" crossorigin="anonymous">
+
     <style>
         html {
             position: relative;
@@ -29,28 +32,65 @@
             text-align: center;
         }
         .card, .result-row {
-            border: 1px solid #92bade;
+            /* border: 1px solid #548046; */
             border-top-width: 3px;
             border-radius: 5px;
         }
         .footer {
+            /* display: block; */
             position: absolute;
             bottom: 0;
+            left: 0;
+            right: 0;
+
             width: 100%;
             line-height: 60px;
-            background-color: #1a252f;
+            border-top: 1px solid white;
+            text-align: center;
+            color: #fff;
+            background-color: #78c2ad;
         }
+        .loader {
+            border: 16px solid #f3f3f3; /* Light grey */
+            border-top: 16px solid #78c2ad; /* Light green */
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 0.5s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <a class="navbar-brand" href="/">AstCardCalc</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+      
+        <div class="collapse navbar-collapse" id="navbarColor01">
+          <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+              <a class="nav-link" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">About</a>
+            </li>
+          </ul>
+        </div>
+    </nav>
+
     <div class="mt-4 container">
         {% block content %}{% endblock %}
     </div>
     <footer class="footer">
         <div class="container">
             <div class="row">
-                <div class="col-12 col-md-6 text-center text-md-left text-muted">Site created by Marielle Kaidafaux (Adamantoise)</div>
-                <div class="col-12 col-md-6 text-center text-md-right"><a href="/about" title="About AstCardCalc">More about this site</a></div>
+                <div>Site created by Marielle Kaidafaux (Adamantoise)</div>                
             </div>
         </div>
     </footer>
