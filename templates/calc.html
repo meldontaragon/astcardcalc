@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="row">
+        <div class="card mb-4 p-2">
+            <h5 class="card-title {% if report.enc_kill %}text-success{% else %}text-danger{% endif %}">{{ report.enc_name }}</h5>
+            <h6 class="card-subtitle mb-2">{{ report.enc_time }}</h6>
+            <a class="card-link" href="https://www.fflogs.com/reports/{{ report.report_id}}#fight={{ report.fight_id }}">Original log</a>
+        </div>
+    </div>
+    {% for result in report.results %}
+    <div class="row result-row mb-2 p-2">
+        <div class="col">
+            <p>
+                <span class="badge badge-secondary">{{ friends[result['source']]['name'] }}</span>
+                played 
+                <span class="badge badge-secondary">{{ result.card }}</span>
+                on
+                <span class="badge badge-secondary">{{ friends[result['target']]['name'] }}</span>
+                at
+                <span class="badge badge-secondary">{{ result.timing }}</span>
+            </p>
+            <p>The correct target was <span class="badge badge-{% if friends[result['target']]['name'] == result['correct'] %}success{% else %}danger{% endif %}">{{ result['correct'] }}</span></p>
+
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th scope="col">Player</th>
+                        <th scope="col">Job</th>
+                        <th scope="col">Damage</th>
+                        <th scope="col">Raw Damage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for damage in result['damages'] %}
+                    {% if friends[damage['id']]['type'] != 'LimitBreak' %}
+                        <tr>
+                            <td>{{ friends[damage['id']]['name'] }}</td>
+                            <td>{{ friends[damage['id']]['type'] }}</td>
+                            <td>{{ damage['damage'] }}</td>
+                            <td>{{ damage['rawdamage'] }}</td>
+                        </tr>
+                    {% endif %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <hr>
+    </div>
+    {% endfor %}
+{% endblock %}

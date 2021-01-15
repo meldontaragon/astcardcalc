@@ -1,0 +1,58 @@
+<!doctype html>
+<html>
+<head>
+    <title>Astrologian Card Calculator</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/4.0.0/superhero/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html {
+            position: relative;
+            min-height: 100%;
+        }
+        body {
+            margin-bottom: 80px;
+        }
+        @media (max-width: 768px) {
+            body {
+                margin-bottom: 180px;
+            }
+        }
+        .badge {
+            font-size: 100%;
+        }
+        .card {
+            display: inline-block;
+            text-align: center;
+        }
+        .card, .result-row {
+            border: 1px solid #92bade;
+            border-top-width: 3px;
+            border-radius: 5px;
+        }
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            line-height: 60px;
+            background-color: #1a252f;
+        }
+    </style>
+</head>
+<body>
+    <div class="mt-4 container">
+        {% block content %}{% endblock %}
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-12 col-md-6 text-center text-md-left text-muted">Site created by Marielle Kaidafaux (Adamantoise)</div>
+                <div class="col-12 col-md-6 text-center text-md-right"><a href="/about" title="About AstCardCalc">More about this site</a></div>
+            </div>
+        </div>
+    </footer>
+</body>
+

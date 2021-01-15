@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>What is this?</h1>
+
+<p>This is a tool to calculate the optimal target for Astrologian cards in Final Fantasy XIV</p>
+
+<h2>Does it account for...</h2>
+
+<p>Generally, yes. Specifically it accounts for these commonly asked things:</p>
+<ul>
+    <li>Includes pet damage</li>
+    <li>Excludes the 3%/4%/6%/8% damage buff from the card
+    <li>Excludes ticks from DoTs snapshotted before the card window</li>
+    <li>Excludes ticks from DoTs snapshotted after the card window</li>
+    <li>Includes ticks from DoTs snapshotted inside the card window, including ticks that happen afterward</li>
+    <li>Includes damage from ground effect DoTs (Shadow Flare, Doton, Salted Earth, Flamethrower)</li>
+    <li>Includes damage from Radiant Shield (when applicable)</li>
+</ul>
+
+<h2>How it works</h2>
+
+<p>This is the methodology used by the script for each tether window</p>
+<ol>
+    <li>Get all of the non-tick, direct damage inside the 15 second window for each player</li>
+    <li>Walk through each debuff and tick event.
+        <ul>
+            <li>While inside the window, keep a list of every debuff application we see. Remove debuffs that fade</li>
+            <li>For every tick, add it only if there's been an application of that debuff inside the window</li>
+            <li>For Stormblood wildfire, take 25% of the damage done inside the card window, if card was only up for some part of it</li>
+        </ul>
+    </li>
+    <li>Take out the appropriate bonus to the player that actually receieved the card based on what card was played and the job of the receiving player</li>
+</ol>
+
+<p>After doing all of that, the result is an accurate representation of the <strong>total amount of damage that would have been buffed by the card</strong>, if that player were its target at the time it was originally played.</p>
+
+<h2>Who made this?</h2>
+
+<p>This project is heavily based on the tethercalc project from Platinum Xephera on the Ultros server. This was adapted by Marielle Kaidafaux on Adamantoise because there didn't exist a good tool to examine optimal targets for cards while playing astroligian. I hope the {{ report_count }} analyzed reports have been useful.</p>
+<p>If you notice any issues, feel free to DM me through Discord (Melody ♫#1653), or open issues and pull requests on the <a href="https://github.com/meldontaragon/astcardcalc">GitHub repo</a> for this site.</p>
+
+<h2>Changes</h2>
+{% endblock %}

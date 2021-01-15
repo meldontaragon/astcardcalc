@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form method="POST">
+    <div class="form-group">
+        <label for="report">Report URL</label>
+        <input type="text" name="report_url" class="form-control" placeholder="Report URL">
+    </div>
+    <button type="submit" class="btn btn-primary">Analyze</button>
+</form>
+{% endblock %}
