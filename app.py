@@ -80,7 +80,13 @@ def homepage():
 
 @app.route('/about')
 def about():
-    count = Count.query.get(1)
+    try:
+        count = Count.query.get(1)
+    except:
+        db.create_all()
+        count = Count(count_id = 1, total_reports = 1)
+        db.session.add(count)
+        db.session.commit()
 
     return render_template('about.html', report_count=count.total_reports)
 
@@ -98,7 +104,7 @@ def calc(report_id, fight_id):
     try:
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
     except:
-        db.create_all()     
+        db.create_all()
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
 
     if report:
