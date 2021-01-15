@@ -284,15 +284,15 @@ def get_damages(report, start, end):
 
 def get_tick_damages(report, version, start, end):
     """
-    Gets the damage each player caused between start and end from tick damage
-    that was snapshotted in the start-end window
+    Gets the damage each player caused between start and 
+    end from tick damage that was snapshotted in the 
+    start-end window
     """
     # Set up initial options to count ticks
     options = {
         'start': start,
         'end': end + 60000, # 60s is the longest dot
         'filter': """
-            source.type="player" and
             ability.id not in (1000493, 1000819, 1000820, 1001203, 1000821, 1000140, 1001195, 1001291, 1001221)
             and (
                 (
@@ -314,12 +314,11 @@ def get_tick_damages(report, version, start, end):
             )
         """
         # Filter explanation:
-        # 1. source.type is player because tether doesn't affect pets or npcs
-        # 2. exclude non-dot debuff events like foe req that spam event log to minimize requests
-        # 3. include debuff events
-        # 4. include individual dot ticks on enemy
-        # 5. include only buffs corresponding to ground effect dots
-        # 6. include radiant shield damage
+        # 1. exclude non-dot debuff events like foe req that spam event log to minimize requests
+        # 2. include debuff events
+        # 3. include individual dot ticks on enemy
+        # 4. include only buffs corresponding to ground effect dots
+        # 5. include radiant shield damage
     }
 
     tick_data = fflogs_api('events/summary', report, options)
@@ -453,9 +452,10 @@ def get_tick_damages(report, version, start, end):
 
     return tick_damage
 
-def get_real_damages(damages, tick_damages):
+def get_real_damages(damages, tick_damages, pets):
     """
-    Combines the two arguments
+    Combines the two arguments, since cards work with pet damage
+    this also needs to add in the tick damage from pets
     """
     real_damages = {}
     for source in damages.keys():
@@ -463,6 +463,12 @@ def get_real_damages(damages, tick_damages):
             real_damages[source] = damages[source] + tick_damages[source]
         else:
             real_damages[source] = damages[source]
+
+    # search through pets for those owned by anyone in the damage 
+    # sources (this isn't elegant but it works for now)
+    for pet in pets:
+        if pets[pet]['petOwner'] in damages.keys() and pet in tick_damages:
+            real_damages[pets[pet]['petOwner']] += tick_damages[pet]
 
     return real_damages
 
@@ -480,7 +486,8 @@ def print_results(results, friends, encounter_info):
     Prints the results of the tether calculations
     """
 
-    tabular = '{:<22}{:<13}{:>9}{:>12}   {:<8}{:<9}{:>7}{:>10}'
+    tabular = '{:<22}{:<13}{:>9}{:>12}   {:<8}{:<9}{:>7}'
+    # {:>10}'
     for result in results:
         print("{} played {} on {} at {}".format(
             friends[result['source']]['name'],
@@ -498,7 +505,8 @@ def print_results(results, friends, encounter_info):
         print("The correct target was {}".format(result['correct']))
 
         # Print table
-        print(tabular.format("Player", "Job", "Damage", "Raw Damage",  "JobType", "Has Card", "Bonus", "rDPS Gain"))
+        print(tabular.format("Player", "Job", "Damage", "Raw Damage",  "JobType", "Has Card", "Bonus"))
+        # , "rDPS Gain"))
         print("-" * 80)
         for damage in result['damages']:
             # Ignore limits
@@ -513,7 +521,6 @@ def print_results(results, friends, encounter_info):
                 damage['jobtype'],
                 damage['prevcard'],
                 int(damage['bonus']),
-                # int(damage['bonus']/encounter_info['enc_dur'])
             ))
         print()
 
@@ -575,8 +582,18 @@ def cardcalc(report, fight_id):
         # Hard part: snapshotted dot ticks, including wildfire for logVersion <20
         tick_damages = get_tick_damages(report, version, card['start'], card['end'])
 
+        # Pet Tick damage needs to be added to the owner tick damage
+        # TODO: I think there's a better way to handle this but this
+        # works for now
+        # for tick in tick_damages:
+        #     if tick in pets:
+        #         if pets[tick]['petOwner'] in tick_damages:
+        #             tick_damages[pets[tick]['petOwner']] += tick_damages[tick]
+        #         else:
+        #             tick_damages[pets[tick]['petOwner']] = tick_damages[tick]
+
         # Combine the two
-        real_damages = get_real_damages(damages, tick_damages)
+        real_damages = get_real_damages(damages, tick_damages, pets)
 
         # check the type of card and the type of person who received it
         mult = 0
@@ -670,3 +687,34 @@ def get_last_fight_id(report):
     report_data = fflogs_api('fights', report)
 
     return report_data['fights'][-1]['id']
+
+def get_friends_and_pets(report, fight_id):
+    """
+    Reads an FFLogs report and solves for optimal Card Usage
+    """
+
+    report_data = fflogs_api('fights', report)
+
+    version = report_data['logVersion']
+
+    fight = [fight for fight in report_data['fights'] if fight['id'] == fight_id][0]
+
+    if not fight:
+        raise CardCalcException("Fight ID not found in report")
+
+    encounter_start = fight['start_time']
+    encounter_end = fight['end_time']
+
+    encounter_timing = timedelta(milliseconds=fight['end_time']-fight['start_time'])
+
+    encounter_info = {
+        'enc_name': fight['name'],
+        'enc_time': str(encounter_timing)[2:11],
+        'enc_kill': fight['kill'] if 'kill' in fight else False,
+        # 'enc_dur': int(encounter_timing.total_seconds()),
+    }
+
+    friends = {friend['id']: friend for friend in report_data['friendlies']}
+    pets = {pet['id']: pet for pet in report_data['friendlyPets']}
+
+    return (friends, pets)

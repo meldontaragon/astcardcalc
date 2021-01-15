@@ -2,7 +2,7 @@ from datetime import datetime
 import os
 from urllib.parse import urlparse, parse_qs
 
-from cardcalc import cardcalc, get_last_fight_id, CalcCalcException, print_results, get_cards_played, fflogs_api, timedelta
+from cardcalc import cardcalc, get_last_fight_id, CardCalcException, print_results, get_cards_played, fflogs_api, timedelta, get_friends_and_pets
 
 LAST_CALC_DATE = datetime.fromtimestamp(1563736200)
 
@@ -43,23 +43,24 @@ def decompose_url(url):
 # fight = 21
 
 #zeke's best e10s parse (1/14/21): https://www.fflogs.com/reports/Cpbh94KWTRPtHdam#fight=7&type=damage-done
-report = 'Cpbh94KWTRPtHdam'
-fight = 7
+# report = 'Cpbh94KWTRPtHdam'
+# fight = 7
 
-(results, friends, encounter_info, cards) = cardcalc(report='Cpbh94KWTRPtHdam', fight_id=7)
+#e12p1 pet testing: jyXMVZbC94RB8ADh fight: 25
+report = 'jyXMVZbC94RB8ADh'
+fight = 25
 
-(results, friends, encounter_info, cards) = cardcalc(report, fight)
+(friends, pets) = get_friends_and_pets(report, fight)
 
+for tick in tick_damages:
+    if tick in pets:
+        print('{} is owned by id: {}'.format(pets[tick]['name'],pets[tick]['petOwner']))
 
-# for card in cards:
-#     card['duration'] = timedelta(milliseconds=card['end']-card['start']).total_seconds()
-#     print(card)
+# print("\n")
+# print(friends)
+# print()
+# print(pets)
 
-# for res in results:
-#     print(res['cardtype'])
-#     for dam in res['damages']:
-#         print(dam)
-#     print()
+# (results, friends, encounter_info, cards) = cardcalc(report, fight)
+# print_results(results, friends, encounter_info)
 
-print_results(results, friends, encounter_info)
-# for result in results
