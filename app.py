@@ -11,7 +11,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
-# db.create_all()
 
 LAST_CALC_DATE = datetime.fromtimestamp(1563736200)
 
@@ -48,9 +47,12 @@ def decompose_url(url):
 def increment_count(db):
     count = Count.query.get(1)
 
+
+    # TODO: Fix this
     try:
         count.total_reports = count.total_reports + 1
     except:
+        print('Count db error')
         count = Count(count_id = 1, total_reports = 1)
         db.session.add(count)
     db.session.commit()
@@ -80,13 +82,15 @@ def homepage():
 
 @app.route('/about')
 def about():
+    # TODO: Fix this
     try:
         count = Count.query.get(1)
     except:
-        db.create_all()
+        print('Count db error.')
+        # db.create_all()
+        # db.session.add(count)
+        # db.session.commit()
         count = Count(count_id = 1, total_reports = 1)
-        db.session.add(count)
-        db.session.commit()
 
     return render_template('about.html', report_count=count.total_reports)
 
@@ -101,9 +105,11 @@ def calc(report_id, fight_id):
     if len(report_id) != 16:
         return redirect(url_for('homepage'))
 
+    # TODO: Fix this
     try:
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
     except:
+        print('Report db error')
         db.create_all()
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
 
