@@ -53,6 +53,7 @@ def increment_count(db):
         count.total_reports = count.total_reports + 1
     except:
         print('Count db error')
+        print(os.path.dirname(os.path.realpath(__file__)))
         count = Count(count_id = 1, total_reports = 1)
         db.session.add(count)
     db.session.commit()
@@ -87,6 +88,7 @@ def about():
         count = Count.query.get(1)
     except:
         print('Count db error.')
+        print(os.path.dirname(os.path.realpath(__file__)))        
         # db.create_all()
         # db.session.add(count)
         # db.session.commit()
@@ -110,6 +112,7 @@ def calc(report_id, fight_id):
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
     except:
         print('Report db error')
+        print(os.path.dirname(os.path.realpath(__file__)))        
         db.create_all()
         report = Report.query.filter_by(report_id=report_id, fight_id=fight_id).first()
 
