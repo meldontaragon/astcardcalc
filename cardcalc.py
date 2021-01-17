@@ -101,6 +101,8 @@ def fflogs_api(call, report, options={}):
 # The Ewer          id#1001886
 # The Spire         id#1001887
 """
+def card_to_string(card, start_time):
+    return '{} played {} on {} at {}'.format(card['source'], card['name'], card['target'], str(timedelta(milliseconds=(card['start']-start_time)))[2:11])
 
 def card_type(guid):
     return {
