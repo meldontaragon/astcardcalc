@@ -15,6 +15,7 @@ from cardcalc_data import Player, Pet, FightInfo, CardCalcException, ActorList
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import BackendApplicationClient
 from python_graphql_client import GraphqlClient
+from urllib.parse import urlparse, parse_qs
 
 FFLOGS_CLIENT_ID = os.environ['FFLOGS_CLIENT_ID']
 FFLOGS_CLIENT_SECRET = os.environ['FFLOGS_CLIENT_SECRET']

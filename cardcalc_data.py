@@ -98,7 +98,7 @@ class ActorList:
         return -1
 
 class CardPlay:
-    def __init__(self, start = 0: int, end = 0: int, source = 0: int, target = 0: int, id = 0: int):
+    def __init__(self, start: int = 0, end: int = 0, source: int = 0, target: int = 0, id: int = 0):
         self.start = start
         self.end = end
         self.source = source
@@ -279,7 +279,7 @@ class BurstDamageCollection:
 
         # if a limit is provided (limit > 0) then only search values less than the limit
         if limit > 0:
-            mod_df = self.df.apply(lambda x: [y if y <= limit else 0 for y in x]])
+            mod_df = self.df.apply(lambda x: [y if y <= limit else 0 for y in x])
         else:
             mod_df = self.df
 
