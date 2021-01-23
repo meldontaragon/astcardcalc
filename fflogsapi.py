@@ -8,10 +8,10 @@ from datetime import timedelta
 import os
 
 # local imports
-from cardcalc_data import Player, Pet, FightInfo
+from cardcalc_data import Player, Pet, FightInfo, CardCalcException, ActorList
 
 # Imports related to making API requests
-import requests
+# import requests
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import BackendApplicationClient
 from python_graphql_client import GraphqlClient
@@ -29,6 +29,7 @@ def event_priority(event):
     return {
         'applydebuff': 1,
         'applybuff': 1,
+        'applydebuffstack': 1,
         'refreshdebuff': 2,
         'refreshbuff': 2,
         'removedebuff': 4,
@@ -40,17 +41,10 @@ def event_priority(event):
 # used to obtain a bearer token from the fflogs api
 def get_bearer_token():
     token_client = BackendApplicationClient(client_id=FFLOGS_CLIENT_ID)
+    
     oauth = OAuth2Session(client=token_client)
     token = oauth.fetch_token(token_url=FFLOGS_OAUTH_URL, client_id=FFLOGS_CLIENT_ID, client_secret=FFLOGS_CLIENT_SECRET)
     return token
-
-    headers = {
-        'Content-TYpe': 'application/json',
-        'Authorization': 'Bearer {}'.format(token['access_token']),
-    }
-    response = requests.request('POST', FFLOGS_URL, data=payload, headers=headers)
-
-    return response
 
 # make a request for the data defined in query given a set of
 # variables
@@ -62,6 +56,18 @@ def call_fflogs_api(query, variables, token):
     data = client.execute(query=query, variables=variables, headers=headers)
 
     return data
+
+def decompose_url(url):
+    parts = urlparse(url)
+
+    report_id = [segment for segment in parts.path.split('/') if segment][-1]
+    try:
+        fight_id = parse_qs(parts.fragment)['fight'][0]
+    except KeyError:
+        raise CardCalcException("Fight ID is required. Select a fight first")
+
+    return report_id, fight_id
+
 
 def get_fight_info(report, fight, token):
     variables = {
@@ -75,6 +81,8 @@ query reportData($code: String!) {
                 id
                 startTime
                 endTime
+                name
+                kill
             }
         }
     }
@@ -83,17 +91,22 @@ query reportData($code: String!) {
     data = call_fflogs_api(query, variables, token)
     fights = data['data']['reportData']['report']['fights']
 
-    for f in fights:
-        if f['id'] == fight:
-            return FightInfo(report_id=report, fight_number=fight, start_time=f['startTime'], end_time=f['endTime'])
+    if fight == 'last':
+        f = fights[-1]
+        return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
+    else:
+        for f in fights:
+            if f['id'] == fight:
+                return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
+        
+        raise CardCalcException("Fight ID not found in report")
 
 def get_actor_lists(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
         'startTime': fight_info.start,
         'endTime': fight_info.end,
-    }
-    
+    }    
     query = """
 query reportData($code: String!, $startTime: Float!, $endTime: Float) {
     reportData {
@@ -129,7 +142,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float) {
         if p['petOwner'] in players:
             pets[p['id']] = Pet(p['id'], p['name'], p['petOwner'])
 
-    return (players, pets)
+    return ActorList(players, pets)
 
 def get_card_play_events(fight_info: FightInfo, token):
     variables = {

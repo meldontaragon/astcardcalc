@@ -1,5 +1,8 @@
 from cardcalc_data import Player, Pet, SearchWindow, FightInfo, BurstDamageCollection, ActorList
 
+import pandas as pd
+import numpy as np
+
 """
 This takes a collection of damage events associated with ticks as well as the 
 """
@@ -62,10 +65,35 @@ def calculate_tick_snapshot_damage(damage_events):
     # finally sort the new array of snapshotdamage events and return it
     sorted_tick_damage = sorted(summed_tick_damage, key=lambda tick: tick['timestamp'])
 
+    combined_damage = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
+
     damage_report = {
-        'rawDamage': damage_events['rawDamage'],
-        'snapshotDamage': sorted_tick_damage,
-        'combinedDamage': sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp'])
+        'combinedDamage': combined_damage
+    }
+    
+    return damage_report
+
+def calculate_tick_damage(damage_events):
+    instanced_tick_damage = []
+    
+    for event in damage_events['tickDamage']:        
+        if event['type'] == 'damage':
+            instanced_tick_damage.append({
+                'timestamp': event['timestamp'],
+                'sourceID': event['sourceID'],
+                'targetID': event['targetID'],
+                'amount': event['amount'],
+                'type': 'tickdamage',
+                'abilityGameID': event['abilityGameID']
+            })
+
+    # finally sort the new array of snapshotdamage events and return it
+    sorted_tick_damage = sorted(instanced_tick_damage, key=lambda tick: tick['timestamp'])
+
+    combined_damage = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
+
+    damage_report = {
+        'combinedDamage': combined_damage
     }
     
     return damage_report
@@ -73,17 +101,11 @@ def calculate_tick_snapshot_damage(damage_events):
 def calculate_total_damage(damage_report, start_time, end_time, actors: ActorList):
     combined_damage = {}
 
-    # add all raw damage events
-    for event in damage_report['combinedDamage']:
-        if event['timestamp'] > start_time and event['timestamp'] < end_time:
-            if event['sourceID'] in combined_damage:
-                combined_damage[event['sourceID']] += event['amount']
-            else:
-                combined_damage[event['sourceID']] = event['amount']                
-        # assume order events and if the current event is after 
-        # the end time then we're done
-        if event['timestamp'] > end_time:
-            break
+    # create a dataframe with only the current time window
+    current_df = damage_report['combinedDamage'].query('timestamp >= {} and timestamp <= {}'.format(start_time, end_time))
+
+    for actor in current_df['sourceID'].unique():
+        combined_damage[actor] = current_df.query('sourceID == {}'.format(actor))['amount'].sum()
 
     player_damage = {}
     for p in actors.players:
@@ -116,24 +138,53 @@ end_time: final time that the interval can start
 duration: the length of the interval (in milliseconds)
 step_size: step_size for the search (in milliseconds)
 """
-def search_burst_window(damage_report, search_window: SearchWindow, actors: ActorList):
+def search_burst_window(damage_report, search_window: SearchWindow, actors: ActorList):    
     # start searching at the start
     interval_start = search_window.start
     interval_end = interval_start + search_window.duration
 
-    damage_collection = {}
+    damage_collection = []
 
     while interval_start < search_window.end:
         (total_damage, _, _) = calculate_total_damage(damage_report, interval_start, interval_end, actors)
         
-        # sorted_damage = sorted(total_damage.items(), key=lambda dmg: dmg[1])
-        
         # add all values to the collection at this timestamp
-        damage_collection[interval_start] = {}
-        for ind in total_damage:
-            damage_collection[interval_start][ind] = total_damage[ind]
+        current_damage = total_damage
+        current_damage['timestamp'] = interval_start
+        damage_collection.append(current_damage)
 
         interval_start += search_window.step
         interval_end = interval_start + search_window.duration
     
-    return BurstDamageCollection(damage_collection, search_window.duration)
+    damage_df = pd.DataFrame(damage_collection)
+    damage_df.set_index('timestamp', drop=True, inplace=True)
+
+    return BurstDamageCollection(damage_df, search_window.duration)
+
+
+def time_averaged_dps(damage_report, startTime, endTime, stepSize, timeRange):
+
+    average_dps = []
+    df = damage_report['combinedDamage']
+
+    current_time = startTime
+    min_time = max(current_time - timeRange, startTime)
+    max_time = min(current_time + timeRange, endTime)
+
+    # sum up all 
+    while current_time < endTime:
+        delta = (max_time - min_time)/1000
+
+        active_events = df.query('timestamp <= {} and timestamp >= {}'.format(max_time, min_time))
+        step_damage = active_events['amount'].sum()
+
+        average_dps.append({
+            'timestamp': current_time,
+            'dps': step_damage/delta,
+        })
+
+        current_time += stepSize
+        min_time = max(current_time - timeRange, startTime)
+        max_time = min(current_time + timeRange, endTime)
+
+    return pd.DataFrame(average_dps)
