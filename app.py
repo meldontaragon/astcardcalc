@@ -12,7 +12,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-LAST_CALC_DATE = datetime.fromtimestamp(1563736200)
+LAST_CALC_DATE = datetime.fromtimestamp(1611093844)
 
 class Report(db.Model):
     report_id = db.Column(db.String(16), primary_key=True)
