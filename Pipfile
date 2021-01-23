@@ -22,6 +22,7 @@ gunicorn = "*"
 "python_graphql_client" = "*"
 "plotly" = "*"
 "pandas" = "*"
+"numpy" = "*"
 
 [requires]
 
