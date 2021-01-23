@@ -2,3 +2,5 @@
 __pycache__/
 sample/
 sample/*
+.exports
+index.html
