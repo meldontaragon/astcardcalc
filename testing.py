@@ -64,32 +64,20 @@ token = get_bearer_token()
 # url = 'https://www.fflogs.com/reports/KaCwVdgTQYhmRAxD#fight=10'
 # url = 'https://www.fflogs.com/reports/byLqHjz8MnphQP3r#fight=1'
 # url = 'https://www.fflogs.com/reports/TmzFDHfWL8bhdMAn#fight=6'
-url = 'https://www.fflogs.com/reports/fZXhDbTjw7GWmKLz#fight=2'
+# url = 'https://www.fflogs.com/reports/fZXhDbTjw7GWmKLz#fight=2'
+url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
 
-report_id, fight_id = decompose_url(url)
+report_id, fight_id = decompose_url(url, token)
 
-# print('Report: {} ({})\nFight: {} ({})'.format(report_id, type(report_id), fight_id, type(fight_id)))
+fight_info = get_fight_info(report_id, fight_id, token)
+actor_list = get_actor_lists(fight_info, token)
+
+damage_data = get_damage_events(fight_info, token)
+
+damage_report = calculate_tick_snapshot_damage(damage_data)
+print(damage_report.loc[lambda df: df['timestamp'] > 1489968])
+print('Intentionally Empty')
+print(damage_report.loc[lambda df: (df['timestamp'] > 1489968) & (df['sourceID'] == 3)])
 
 cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
-
-dmg_tbl = cardcalc_data[0]['cardDamageTable']
-
-test_to_dict_damage_table(dmg_tbl)
-
-# fight_info = get_fight_info(report_id, fight_id, token)
-# actor_list = get_actor_lists(fight_info, token)
-
-# damage_data = get_damage_events(fight_info, token)
-
-# damage_report = calculate_tick_snapshot_damage(damage_data)
-# damage_report_base = calculate_tick_damage(damage_data)
-
-# search_window = SearchWindow(fight_info.start, fight_info.end, 15000, 1000)
-# burst_damage_collection = search_burst_window(damage_report, search_window, actor_list)
-
-# df_base = damage_report_base['combinedDamage']
-# df_snapshot = damage_report['combinedDamage']
-
-print(actors)
-
-
+print(cardcalc_data)

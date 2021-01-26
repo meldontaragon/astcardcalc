@@ -58,7 +58,29 @@ def call_fflogs_api(query, variables, token):
 
     return data
 
-def decompose_url(url):
+def get_last_fight(report, token):
+    variables = {
+        'code': report
+    }
+    query = """
+query reportData($code: String!) {
+    reportData {
+        report(code: $code) {
+            fights {
+                id
+                startTime
+                endTime
+                name
+                kill
+            }
+        }
+    }
+}
+"""
+    data = call_fflogs_api(query, variables, token)
+    return data['data']['reportData']['report']['fights'][-1]['id']
+
+def decompose_url(url, token):
     parts = urlparse(url)
 
     report_id = [segment for segment in parts.path.split('/') if segment][-1]
@@ -67,8 +89,9 @@ def decompose_url(url):
     except KeyError:
         raise CardCalcException("Fight ID is required. Select a fight first")
     
-    if (fight_id != 'last'):
-        fight_id = int(fight_id)
+    if fight_id == 'last':
+        fight_id = get_last_fight(report_id, token)
+    fight_id = int(fight_id)
 
     return report_id, fight_id
 
@@ -95,15 +118,11 @@ query reportData($code: String!) {
     data = call_fflogs_api(query, variables, token)
     fights = data['data']['reportData']['report']['fights']
 
-    if fight == 'last':
-        f = fights[-1]
-        return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
-    else:
-        for f in fights:
-            if f['id'] == fight:
-                return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
+    for f in fights:
+        if f['id'] == fight:
+            return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
         
-        raise CardCalcException("Fight ID not found in report")
+    raise CardCalcException("Fight ID not found in report")
 
 def get_actor_lists(fight_info: FightInfo, token):
     variables = {

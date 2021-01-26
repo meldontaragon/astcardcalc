@@ -65,12 +65,8 @@ def calculate_tick_snapshot_damage(damage_events):
     # finally sort the new array of snapshotdamage events and return it
     sorted_tick_damage = sorted(summed_tick_damage, key=lambda tick: tick['timestamp'])
 
-    combined_damage = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
+    damage_report = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
 
-    damage_report = {
-        'combinedDamage': combined_damage
-    }
-    
     return damage_report
 
 def calculate_tick_damage(damage_events):
@@ -90,19 +86,42 @@ def calculate_tick_damage(damage_events):
     # finally sort the new array of snapshotdamage events and return it
     sorted_tick_damage = sorted(instanced_tick_damage, key=lambda tick: tick['timestamp'])
 
-    combined_damage = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
+    damage_report = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount'])
 
-    damage_report = {
-        'combinedDamage': combined_damage
-    }
-    
+    return damage_report
+
+def remove_card_damage(damage_report, cards, actors):
+    for card in cards:
+        # check the real bonus received
+        eff_bonus = 1.0
+
+        print(card)
+
+        if card.target in actors.players:
+            if card.role == actors.players[card.target].role:
+                eff_bonus = card.bonus
+            else:
+                eff_bonus = 1.0 + ((card.bonus - 1.0)/2.0)
+        elif card.target in actors.pets:
+            if card.role == actors.players[actors.pets[card.target].owner].role:
+                eff_bonus = card.bonus
+            else:
+                eff_bonus = 1.0 + ((card.bonus - 1.0)/2.0)
+
+        # check if there are any valid damage values for the active card holder during it's time window (this should be non-empty but especially for pets may sometimes not be)
+        if damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].empty:
+            next
+        else:
+            # modifiy all values with the correct sourceID that lie between the start event and end event times for the card
+            damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'] = damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].transform(lambda x: int(x/eff_bonus))
+
     return damage_report
 
 def calculate_total_damage(damage_report, start_time, end_time, actors: ActorList):
     combined_damage = {}
 
     # create a dataframe with only the current time window
-    current_df = damage_report['combinedDamage'].query('timestamp >= {} and timestamp <= {}'.format(start_time, end_time))
+    current_df = damage_report.query('timestamp >= {} and timestamp <= {}'.format(start_time, end_time))
 
     for actor in current_df['sourceID'].unique():
         combined_damage[actor] = current_df.query('sourceID == {}'.format(actor))['amount'].sum()
@@ -173,8 +192,7 @@ def search_burst_window(damage_report, search_window: SearchWindow, actors: Acto
 def time_averaged_dps(damage_report, startTime, endTime, stepSize, timeRange):
 
     average_dps = []
-    df = damage_report['combinedDamage']
-
+    
     current_time = startTime
     min_time = max(current_time - timeRange, startTime)
     max_time = min(current_time + timeRange, endTime)
@@ -183,7 +201,7 @@ def time_averaged_dps(damage_report, startTime, endTime, stepSize, timeRange):
     while current_time < endTime:
         delta = (max_time - min_time)/1000
 
-        active_events = df.query('timestamp <= {} and timestamp >= {}'.format(max_time, min_time))
+        active_events = damage_report.query('timestamp <= {} and timestamp >= {}'.format(max_time, min_time))
         step_damage = active_events['amount'].sum()
 
         average_dps.append({

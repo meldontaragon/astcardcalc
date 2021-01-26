@@ -61,7 +61,7 @@ def homepage():
     if request.method == 'POST':
         report_url = request.form['report_url']
         try:
-            report_id, fight_id = decompose_url(report_url)
+            report_id, fight_id = decompose_url(report_url, token)
         except CardCalcException as exception:
             return render_template('error.html', exception=exception)
 

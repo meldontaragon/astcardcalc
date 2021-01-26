@@ -20,7 +20,7 @@ from cardcalc_data import Player, Pet, CardPlay, BurstWindow, DrawWindow, FightI
 
 from fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
-from damagecalc import calculate_tick_snapshot_damage, calculate_total_damage, search_burst_window
+from damagecalc import calculate_tick_snapshot_damage, calculate_total_damage, search_burst_window, remove_card_damage
 
 """
 For the initial version of this the following simple rules are use.
@@ -151,6 +151,8 @@ def cardcalc(report, fight_id, token):
     damage_events = get_damage_events(fight_info, token)
     damage_report = calculate_tick_snapshot_damage(damage_events)
 
+    non_card_damage_report = remove_card_damage(damage_report, cards, actors)
+
     if not cards:
         raise CardCalcException("No cards played in fight")
     if not draws:
@@ -164,9 +166,12 @@ def cardcalc(report, fight_id, token):
     # go through each draw windows and calculate the following
     # (1.) Find the card played during this window and get the damage dealt by
     #      each player during that play window
-    # (2.) Loop through possible play windows form the start of the draw window
+    # (2.) Remove damage bonuses from any active cards during the current
+    #      window
+    # (3.) Loop through possible play windows form the start of the draw
+    #      window
     #      to the end in 1s increments and calculate damage done
-    # (3.) Return the following:
+    # (4.) Return the following:
     #      (a) table of players/damage done in play window
     #      (b) table of top damage windows
     #          i. include top 3/5/8/10 for draw window lasting at least
@@ -278,11 +283,18 @@ def cardcalc(report, fight_id, token):
         # now we can begin compiling data for the draw window as a whole
         card_draw_data = {}
 
+        # check for any cards that are active during the current search window
+        active_cards = []
+        for c in cards:
+            if c.end > draw.start or c.start < draw.end:
+                active_cards.append(c)
+
         # creates a search window from the start of the draw window to the end
         # with a 15s duration and 1s step size
-        # print('\tComputing draw window damage...')
         search_window = SearchWindow(draw.start, draw.end, 15000, 1000)
-        draw_window_damage_collection = search_burst_window(damage_report, search_window, actors)
+        
+        # this uses the damage report with all card bonuses removed
+        draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
         # print('\tDone.')
