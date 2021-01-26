@@ -14,472 +14,68 @@ ADDTL REACH GOAL: create a timeline of damage snapshot in
 
 from datetime import timedelta
 import os
+import pandas as pd
 
-# Make sure we have the requests library
-try:
-    import requests
-except ImportError:
-    raise ImportError("FFlogs parsing requires the Requests module for python."
-                      "Run the following to install it:\n    python -m pip install requests")
+from cardcalc_data import Player, Pet, CardPlay, BurstWindow, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
 
-class CardCalcException(Exception):
-    pass
+from fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
-def fflogs_fetch(api_url, options):
-    """
-    Gets a url and handles any API errors
-    """
-    # for now hard card the api key
-    options['api_key'] = os.environ['FFLOGS_API_KEY']
-    options['translate'] = True
-
-    response = requests.get(api_url, params=options)
-
-    # Handle non-JSON response
-    try:
-        response_dict = response.json()
-    except:
-        raise CardCalcException('Could not parse response: ' + response.text)
-
-    # Handle bad request
-    if response.status_code != 200:
-        if 'error' in response_dict:
-            raise CardCalcException('FFLogs error: ' + response_dict['error'])
-        else:
-            raise CardCalcException('Unexpected FFLogs response code: ' + response.status_code)
-
-    return response_dict
-
-def fflogs_api(call, report, options={}):
-    """
-    Makes a call to the FFLogs API and returns a dictionary
-    """
-    if call not in ['fights', 'events/summary', 'tables/damage-done']:
-        return {}
-
-    api_url = 'https://www.fflogs.com:443/v1/report/{}/{}'.format(call, report)
-    
-    data = fflogs_fetch(api_url, options)
-
-    # If this is a fight list, we're done already
-    if call in ['fights', 'tables/damage-done']:
-        return data
-
-    # If this is events, there might be more. Fetch until we have all of it
-    while 'nextPageTimestamp' in data:
-        # Set the new start time
-        options['start'] = data['nextPageTimestamp']
-
-        # Get the extra data
-        more_data = fflogs_fetch(api_url, options)
-
-        # Add the new events to the existing data
-        data['events'].extend(more_data['events'])
-
-        # Continue the loop if there's more
-        if 'nextPageTimestamp' in more_data:
-            data['nextPageTimestamp'] = more_data['nextPageTimestamp']
-        else:
-            del data['nextPageTimestamp']
-            break
-
-    # Return the event data
-    return data
+from damagecalc import calculate_tick_snapshot_damage, calculate_total_damage, search_burst_window, remove_card_damage
 
 """
-# Cards:
-#
-# Melee:
-# Lord of Crowns    id#1001876
-# The Balance       id#1001882
-# The Arrow         id#1001884
-# The Spear         id#1001885
-#
-# Ranged:
-# Lady of Crowns    id#1001877
-# The Bole          id#1001883
-# The Ewer          id#1001886
-# The Spire         id#1001887
+For the initial version of this the following simple rules are use.
+Every event starts with one of the following and ends with the same:
+ (1) Draw
+ (2) Sleeve Draw
+ (3) Divination
+Redraws and plays are ignored
 """
+def get_draw_windows(card_events, start_time, end_time):
 
-def card_type(guid):
-    return {
-        1001876: 'melee',
-        1001877: 'ranged',
-        1001882: 'melee',
-        1001884: 'melee',
-        1001885: 'melee',
-        1001883: 'ranged',
-        1001886: 'ranged',
-        1001887: 'ranged',
-    } [guid]
+    last_time = start_time
+    last_event = DrawWindow.GetName(0)
+    current_source = 0
+    draw_windows = []
 
-def card_name(guid):
-    return {
-        1001876: 'Lord of Crowns',
-        1001877: 'Lady of Crowns',
-        1001882: 'The Balance',
-        1001884: 'The Arrow',
-        1001885: 'The Spear',
-        1001883: 'The Bole',
-        1001886: 'The Ewer',
-        1001887: 'The Spire',
-    } [guid]
+    for event in card_events:
+        # check if cast and if it's draw/sleeve/div
+        if event['type'] == 'cast' and event['abilityGameID'] in [3590, 16552, 7448]:
+            current_source = event['sourceID']
+            draw_windows.append(DrawWindow(current_source, last_time, event['timestamp'], last_event, DrawWindow.GetName(event['abilityGameID'])))
 
-def card_bonus(guid):
-    return {
-        1001876: 1.08,
-        1001877: 1.08,
-        1001882: 1.06,
-        1001884: 1.06,
-        1001885: 1.06,
-        1001883: 1.06,
-        1001886: 1.06,
-        1001887: 1.06,
-    } [guid]
-
-def get_draws_divinations(report, start, end):
-    """
-    Gets a list of the card draw events
-    """
-    # x card drawn buffs
-    #'filter': 'ability.id in (1000915, 1000913, 1000914, 1000917, 1000916, 1000918)',
-    options = {
-        'start': start,
-        'end': end,
-        'filter': 'ability.id in (3590, 7448, 3593, 16552, 1000915, 1000913, 1000914, 1000917, 1000916, 1000918)',
-    }
-
-    event_data = fflogs_api('events/summary', report, options)
-
-    draws = []
-
-    for event in event_data['events']:
-        # if applybuff then create/modify event with the 
-        # card drawn
-        if event['type'] == 'applybuff':
-            draw_set = [draw 
-                    for draw in draws 
-                    if draw['source'] == event['sourceID'] 
-                    and draw['time'] == event['timestamp'] 
-                    and 'card' not in draw]
-            if draw_set:
-                draw = draw_set[0]
-                draw['card'] = event['ability']['name']
-                draw['id'] = event['ability']['guid']
-            else:
-                draws.append({
-                    'source': event['sourceID'],
-                    'time': event['timestamp'],
-                    'card': event['ability']['name'],
-                    'id': event['ability']['guid'],
-                })
-        # if cast then create/modify even with the draw type
-        # from (draw, redraw, sleevedraw)
-        elif event['type'] == 'cast' and event['ability']['name'] != 'Divination':
-            draw_set = [draw 
-                    for draw in draws 
-                    if draw['source'] == event['sourceID'] 
-                    and draw['time'] == event['timestamp'] 
-                    and 'type' not in draw]
-            if draw_set:
-                draw = draw_set[0]
-                draw['type'] = event['ability']['name']
-            else:
-                draws.append({
-                    'source': event['sourceID'],
-                    'time': event['timestamp'],
-                    'type': event['ability']['name'],
-                })
-
-    divinations = []
-    for event in event_data:
-        if event['ability']['name'] == 'Divination':
-            divinations.append({
-                'source': event['sourceID'],
-                'time': event['timestamp'],
-                'type': event['ability']['name'],
-            })            
-
-    return (draws, divinations)
-
-def get_cards_played(report, start, end):
-    """
-    Gets a list of cards played
-    """
-    options = {
-        'start': start,
-        'end': end,
-        'filter': 'ability.id in (1001877, 1001883, 1001886, 1001887, 1001876, 1001882, 1001884, 1001885)'
-    }
-
-    # print('API Call: https://www.fflogs.com:443/v1/report/{}/{}'.format('events/summary',report))
-    # print('Start: {}'.format(options['start']))
-    # print('End: {}'.format(options['end']))
-    # print('Filter: {}'.format(options['filter']))
+            last_time = event['timestamp']
+            last_event = DrawWindow.GetName(event['abilityGameID'])
     
-    event_data = fflogs_api('events/summary', report, options)
+    draw_windows.append(DrawWindow(current_source, last_time, end_time, last_event, DrawWindow.GetName(-1)))
 
+    return draw_windows
+
+def get_cards_played(card_events, start_time, end_time):
     cards = []
 
     # Build list from events
-    for event in event_data['events']:
-        # If applying the buff, add an item to the tethers
+    for event in card_events:
+        # If applying the buff, add an item to the list of
+        # cards played
         if event['type'] == 'applybuff':
-            cards.append({
-                'source': event['sourceID'],
-                'target': event['targetID'],
-                'start': event['timestamp'],
-                'type': card_type(event['ability']['guid']),
-                'name': card_name(event['ability']['guid']),
-                'bonus': card_bonus(event['ability']['guid']),                
-                'id': event['ability']['guid'],                
-            })
+            cards.append(CardPlay(event['timestamp'], None, event['sourceID'], event['targetID'], event['abilityGameID']))
         # If removing the buff, add an end timestamp to the matching application
         elif event['type'] == 'removebuff':
             card_set = [card
                       for card in cards
-                      if card['target'] == event['targetID'] and card['source'] == event['sourceID'] and card['id'] == event['ability']['guid'] and 'end' not in card]
+                      if card.target == event['targetID'] and card.source == event['sourceID'] and card.id == event['abilityGameID'] and card.end is None]
             # add it to the discovered tether
             if card_set:
                 card = card_set[0]
-                card['end'] = event['timestamp']
+                card.end = event['timestamp']
             # if there is no start event, add one and set it to 15s prior
             else:
-                cards.append({
-                    'source': event['sourceID'],
-                    'target': event['targetID'],
-                    'start': max(event['timestamp'] - 15000, start),
-                    'end': event['timestamp'],
-                    'type': card_type(event['ability']['guid']),
-                    'name': card_name(event['ability']['guid']),
-                    'bonus': card_bonus(event['ability']['guid']),                
-                    'id': event['ability']['guid'],                
-                })
+                cards.append(CardPlay(max(event['timestamp'] - 15000, start_time), event['timestamp'], event['sourceID'], event['targetID'], event['abilityGameID']))
     for card in cards:
-        if 'end' not in card:
-            # print('Card is missing end')
-            card['end'] = min(card['start'] + 15000, end)
+        if card.end is None:
+            card.end = min(card.start + 15000, end_time)
 
     return cards
-
-def get_damages(report, start, end):
-    """
-    Gets non-tick, non-pet damage caused between start and end
-    """
-    options = {
-        'start': start,
-        'end': end,
-        'filter': 'isTick="false"'
-    }
-
-    damage_data = fflogs_api('tables/damage-done', report, options)
-
-    damages = {}
-
-    for damage in damage_data['entries']:
-        damages[damage['id']] = damage['total']
-
-    return damages
-
-def get_tick_damages(report, version, start, end):
-    """
-    Gets the damage each player caused between start and 
-    end from tick damage that was snapshotted in the 
-    start-end window
-    """
-    # Set up initial options to count ticks
-    options = {
-        'start': start,
-        'end': end + 60000, # 60s is the longest dot
-        'filter': """
-            ability.id not in (1000493, 1000819, 1000820, 1001203, 1000821, 1000140, 1001195, 1001291, 1001221)
-            and (
-                (
-                    type="applydebuff" or type="refreshdebuff" or type="removedebuff"
-                ) or (
-                    isTick="true" and
-                    type="damage" and
-                    target.disposition="enemy" and
-                    ability.name!="Combined DoTs"
-                ) or (
-                    (
-                        type="applybuff" or type="refreshbuff" or type="removebuff"
-                    ) and (
-                        ability.id=1000190 or ability.id=1000749 or ability.id=1000501 or ability.id=1001205
-                    )
-                ) or (
-                    type="damage" and ability.id=799
-                )
-            )
-        """
-        # Filter explanation:
-        # 1. exclude non-dot debuff events like foe req that spam event log to minimize requests
-        # 2. include debuff events
-        # 3. include individual dot ticks on enemy
-        # 4. include only buffs corresponding to ground effect dots
-        # 5. include radiant shield damage
-    }
-
-    tick_data = fflogs_api('events/summary', report, options)
-
-    # Active debuff window. These will be the debuffs whose damage will count, because they
-    # were applied within the tether window. List of tuples (sourceID, abilityID)
-    active_debuffs = []
-
-    # These will be how much tick damage was applied by a source, only counting
-    # debuffs applied during the window
-    tick_damage = {}
-
-    # Wildfire instances. These get special handling afterwards, for stormblood logs
-    wildfires = {}
-
-    for event in tick_data['events']:
-        # Fix rare issue where full source is reported instead of just sourceID
-        if 'sourceID' not in event and 'source' in event and 'id' in event['source']:
-            event['sourceID'] = event['source']['id']
-
-        action = (event['sourceID'], event['ability']['guid'])
-
-        # Record wildfires but skip processing for now. Only for stormblood logs
-        if event['ability']['guid'] == 1000861 and version < 20:
-            if event['sourceID'] in wildfires:
-                wildfire = wildfires[event['sourceID']]
-            else:
-                wildfire = {}
-
-            if event['type'] == 'applydebuff':
-                if 'start' not in wildfire:
-                    wildfire['start'] = event['timestamp']
-            elif event['type'] == 'removedebuff':
-                if 'end' not in wildfire:
-                    # Effective WF duration is 9.25
-                    wildfire['end'] = event['timestamp'] - 750
-            elif event['type'] == 'damage':
-                if 'damage' not in wildfire:
-                    wildfire['damage'] = event['amount']
-
-            wildfire['target'] = event['targetID']
-
-            wildfires[event['sourceID']] = wildfire
-            continue
-
-        # Debuff applications inside window
-        if event['type'] in ['applydebuff', 'refreshdebuff', 'applybuff', 'refreshbuff'] and event['timestamp'] < end:
-            # Add to active if not present
-            if action not in active_debuffs:
-                active_debuffs.append(action)
-
-        # Debuff applications outside window
-        elif event['type'] in ['applydebuff', 'refreshdebuff', 'applybuff', 'refreshbuff'] and event['timestamp'] > end:
-            # Remove from active if present
-            if action in active_debuffs:
-                active_debuffs.remove(action)
-
-        # Debuff fades don't have to be removed. Wildfire (ShB) will 
-        # occasionally log its tick damage after the fade event, so faded 
-        # debuffs that deal damage should still be included as implicitly 
-        # belonging to the last application
-
-        # Damage tick
-        elif event['type'] == 'damage':
-            # If this is radiant shield, add to the supportID
-            if action[1] == 799 and event['timestamp'] < end:
-                if event['supportID'] in tick_damage:
-                    tick_damage[event['supportID']] += event['amount']
-                else:
-                    tick_damage[event['supportID']] = event['amount']
-
-            # Add damage only if it's from a snapshotted debuff
-            elif action in active_debuffs:
-                if event['sourceID'] in tick_damage:
-                    tick_damage[event['sourceID']] += event['amount']
-                else:
-                    tick_damage[event['sourceID']] = event['amount']
-
-    # Wildfire handling. This part is hard
-    # There will be no wildfires for shadowbringers logs, since they are handled
-    # as a normal DoT tick.
-    for source, wildfire in wildfires.items():
-        # If wildfire never went off, set to 0 damage
-        if 'damage' not in wildfire:
-            wildfire['damage'] = 0
-
-        # If entirely within the window, just add the real value
-        if ('start' in wildfire and
-                'end' in wildfire and
-                wildfire['start'] > start and
-                wildfire['end'] < end):
-            if source in tick_damage:
-                tick_damage[source] += wildfire['damage']
-            else:
-                tick_damage[source] = wildfire['damage']
-
-        # If it started after the window, ignore it
-        elif 'start' in wildfire and wildfire['start'] > end:
-            pass
-
-        # If it's only partially in the window, calculate how much damage tether would've affected
-        # Shoutout to [Odin] Lynn Nuvestrahl for explaining wildfire mechanics to me
-        elif 'end' in wildfire:
-            # If wildfire started before dragon sight, the start will be tether start
-            if 'start' not in wildfire:
-                wildfire['start'] = start
-            # If wildfire ended after dragon sight, the end will be tether end
-            if wildfire['end'] > end:
-                wildfire['end'] = end
-
-            # Set up query for applicable mch damage
-            options['start'] = wildfire['start']
-            options['end'] = wildfire['end']
-
-            # Only damage on the WF target by the player, not the turret
-            options['filter'] = 'source.type!="pet"'
-            options['filter'] += ' and source.id=' + str(source)
-            options['filter'] += ' and target.id=' + str(wildfire['target'])
-
-            wildfire_data = fflogs_api('tables/damage-done', report, options)
-
-            # If there's 0 damage there won't be any entries
-            if not len(wildfire_data['entries']):
-                pass
-
-            # Filter is strict enough that we can just use the number directly
-            elif source in tick_damage:
-                tick_damage[source] += int(0.25 * wildfire_data['entries'][0]['total'])
-            else:
-                tick_damage[source] = int(0.25 * wildfire_data['entries'][0]['total'])
-
-    return tick_damage
-
-def get_real_damages(damages, tick_damages, pets):
-    """
-    Combines the two arguments, since cards work with pet damage
-    this also needs to add in the tick damage from pets
-    """
-    real_damages = {}
-    for source in damages.keys():
-        if source in tick_damages:
-            real_damages[source] = damages[source] + tick_damages[source]
-        else:
-            real_damages[source] = damages[source]
-
-    # search through pets for those owned by anyone in the damage 
-    # sources (this isn't elegant but it works for now)
-    for pet in pets:
-        if pets[pet]['petOwner'] in damages.keys() and pet in tick_damages:
-            real_damages[pets[pet]['petOwner']] += tick_damages[pet]
-
-    return real_damages
-
-def get_blocked_damage_totals(report, start, end, interval=1, duration=15):
-    """
-    Okay, here's the really complicated and slow process
-
-    I want to go from the start of the fight to the end of the fight in some interval size (default: 1) and check how much damage would be snapshot for a buff of a given duration (default: 15) if played at the start of that interval
-
-    Then combine all of these values for each actor so this information can be parsed/plotted/etc (I don't know, this is gonna be a massive amount of data parsing and ultimately I can't afford to actually make this many API requests so I'm gonna need to grab the whole fight at once and slowly parse it?????)
-    """
 
 def print_results(results, friends, encounter_info):
     """
@@ -526,198 +122,276 @@ def print_results(results, friends, encounter_info):
             ))
         print()
 
-def job_type(job_name):
-    if job_name in {'DarkKnight', 'Gunbreaker', 'Warrior','Paladin',
-    'Dragoon', 'Samurai', 'Ninja', 'Monk'}:
-        return 'melee'
-    if job_name in {'Machinist', 'Dancer', 'Bard', 'WhiteMage', 'Scholar', 'Astrologian', 'Summoner', 'BlackMage', 'RedMage'}:
-        return 'ranged'
-    return 'n/a'
+"""
+TODO: this might just need to rewritten mostly from scratch because of all the 
+changes I've made to the backend it's interacting with
+"""
 
-def cardcalc(report, fight_id):
+def cardcalc(report, fight_id, token):
     """
     Reads an FFLogs report and solves for optimal Card Usage
     """
+    # get fight info
+    fight_info = get_fight_info(report, fight_id, token)
+    
+    # get actors
+    actors = get_actor_lists(fight_info, token)
 
-    report_data = fflogs_api('fights', report)
+    # actors.PrintPlayers()
+    # actors.PrintPets()
 
-    version = report_data['logVersion']
+    # Build the list of card plays and draw windows
+    card_events = get_card_play_events(fight_info, token)
+    draw_events = get_card_draw_events(fight_info, token)
 
-    fight = [fight for fight in report_data['fights'] if fight['id'] == fight_id][0]
+    cards = get_cards_played(card_events, fight_info.start, fight_info.end)
+    draws = get_draw_windows(draw_events, fight_info.start, fight_info.end)
+    
+    # Get all damage event and then sort out tick event into snapshot damage events
+    damage_events = get_damage_events(fight_info, token)
+    damage_report = calculate_tick_snapshot_damage(damage_events)
 
-    if not fight:
-        raise CardCalcException("Fight ID not found in report")
-
-    encounter_start = fight['start_time']
-    encounter_end = fight['end_time']
-
-    encounter_timing = timedelta(milliseconds=fight['end_time']-fight['start_time'])
-
-    encounter_info = {
-        'enc_name': fight['name'],
-        'enc_time': str(encounter_timing)[2:11],
-        'enc_kill': fight['kill'] if 'kill' in fight else False,
-        # 'enc_dur': int(encounter_timing.total_seconds()),
-    }
-
-    friends = {friend['id']: friend for friend in report_data['friendlies']}
-    pets = {pet['id']: pet for pet in report_data['friendlyPets']}
-
-    # Build the list of tether timings
-    cards = get_cards_played(report, encounter_start, encounter_end)
+    non_card_damage_report = remove_card_damage(damage_report, cards, actors)
 
     if not cards:
         raise CardCalcException("No cards played in fight")
+    if not draws:
+        raise CardCalcException("No draw events in fight")
 
-    results = []
-
-    # remove cards given to pets since the owner damage includes that
+    # remove cards given to pets since the owner's card will account for that
     for card in cards:
-        if card['target'] in pets:
-            # print('Removed pet with ID: {}'.format(card['target']))
+        if card.target not in actors.players:
             cards.remove(card)
 
-    for card in cards:
-        # Easy part: non-dot damage done in window
-        damages = get_damages(report, card['start'], card['end'])
+    # go through each draw windows and calculate the following
+    # (1.) Find the card played during this window and get the damage dealt by
+    #      each player during that play window
+    # (2.) Remove damage bonuses from any active cards during the current
+    #      window
+    # (3.) Loop through possible play windows form the start of the draw
+    #      window
+    #      to the end in 1s increments and calculate damage done
+    # (4.) Return the following:
+    #      (a) table of players/damage done in play window
+    #      (b) table of top damage windows
+    #          i. include top 3/5/8/10 for draw window lasting at least
+    #             0/4/10/20 seconds
+    #          ii. don't include the same player twice in the same 4s interval
+    #      (c) start/end time of draw window
+    #      (d) start/end events of draw window
+    #      (e) card play time (if present)
+    #      (f) source/target
+    #      (g) correct target in play window
+    #      (h) card played
 
-        # Hard part: snapshotted dot ticks, including wildfire for logVersion <20
-        tick_damages = get_tick_damages(report, version, card['start'], card['end'])
-
-        # Pet Tick damage needs to be added to the owner tick damage
-        # TODO: I think there's a better way to handle this but this
-        # works for now
-        # for tick in tick_damages:
-        #     if tick in pets:
-        #         if pets[tick]['petOwner'] in tick_damages:
-        #             tick_damages[pets[tick]['petOwner']] += tick_damages[tick]
-        #         else:
-        #             tick_damages[pets[tick]['petOwner']] = tick_damages[tick]
-
-        # Combine the two
-        real_damages = get_real_damages(damages, tick_damages, pets)
-
-        # check the type of card and the type of person who received it
-        mult = 0
-        correct_type = False
-
-        if not (card['target'] in friends):
-            # print('Another pet found, ID: {}'.format(card['target']))
-            cards.remove(card)
-            continue
-
-        if job_type(friends[card['target']]['type']) == card['type']:
-            mult = card['bonus']
-            correct_type = True
-        else:
-            mult = 1 + ((mult-1.0)/2.0)
-            correct_type = False
-
-        # Correct damage by removing card bonus from player with card
-        if card['target'] in real_damages:
-            real_damages[card['target']] = int(real_damages[card['target']] / mult)
-
-        damage_list = sorted(real_damages.items(), key=lambda dmg: dmg[1], reverse=True)
-
-        # correct possible damage from jobs with incorrect 
-        # type by dividing their 'available' damage in half
-        # 
-        # also checks if anyone in the list already has a card
-        # and makes a note of it (the damage bonus from that card
-        # can't be properly negated but this allows the user to 
-        # ignore that individual or at least swap the card usages
-        # if the damage difference is large enough between the two 
-        # windows)
-        corrected_damage = []
+    cardcalc_data = []
+    count = 0
+    for draw in draws:
+        count += 1
+        # find if there was a card played in this window
+        card = None
+        for c in cards:
+            if c.start > draw.start and c.start < draw.end:
+                card = c
+                break
         
-        active_cards = [prev_card for prev_card in cards 
-                            if prev_card['start'] < card['start'] 
-                            and prev_card['end'] > card['start']]
+        # print(draw)
 
-        for damage in damage_list:
-            mod_dmg = 0
-            
-            has_card = 'No'
-            for prev_card in active_cards:
-                if prev_card['start'] < card['start'] and prev_card['end'] > card['start'] and prev_card['target'] == damage[0]:
-                    has_card = 'Yes'
-
-            if card['type'] == job_type(friends[damage[0]]['type']):
-                mod_dmg = damage[1]
+        # only handle the play window if there was a card played
+        card_play_data = {}
+        if card is not None:
+            # print(card)
+            # compute damage done during card play window
+            # print('\tComputing card play damage...')
+            (_, damages, _) = calculate_total_damage(damage_report, card.start, card.end, actors)
+            # print('\tDone.')
+            # check what multiplier should be used to remove the damage bonus
+            mult = 0
+            if actors.players[card.target].role == card.role:
+                mult = card.bonus
             else:
-                mod_dmg = int(damage[1]/2.0)
-            corrected_damage.append({
-            'id': damage[0],
-            'damage': mod_dmg,
-            'rawdamage': damage[1],
-            'jobtype': job_type(friends[damage[0]]['type']),
-            'bonus': int(mod_dmg * (card['bonus'] - 1)),
-            'prevcard': has_card,
-            })
+                mult = 1 + ((card.bonus-1.0)/2.0)
 
-        corrected_damage_list = sorted(corrected_damage, key=lambda dmg: dmg['damage'], reverse=True)
+            # Correct damage by removing card bonus from player with card
+            if card.target in damages:
+                damages[card.target] = int(damages[card.target] / mult)
 
-        # Add to results
-        timing = timedelta(milliseconds=card['start']-encounter_start)
+            # now adjust the damage for incorrect roles 
+            corrected_damage = []
+            active_cards = [prev_card for prev_card in cards 
+                                if prev_card.start < card.start
+                                and prev_card.end > card.start]
 
-        # Determine the correct target, the top non-self non-limit combatant
-        for top in corrected_damage_list:
-            if friends[top['id']]['type'] != 'LimitBreak' and friends[top['id']]['type'] != 'Limit Break' and top['prevcard'] == 'No':
-                correct = friends[top['id']]['name']
+            for pid, dmg in damages.items():
+                mod_dmg = dmg
+                has_card = 'No'
+                for prev_card in active_cards:
+                    if prev_card.start < card.start and prev_card.end > card.start and prev_card.target == pid:
+                        has_card = 'Yes'
+
+                if card.role != actors.players[pid].role:
+                    mod_dmg = int(dmg/2)
+                
+                corrected_damage.append({
+                    'id': pid,
+                    'hasCard': has_card,
+                    'realDamage': dmg,
+                    'adjustedDamage': mod_dmg,
+                    'role': actors.players[pid].role,
+                    'job': actors.players[pid].job,
+                })
+
+            # convert to dataframe
+            card_damage_table = pd.DataFrame(corrected_damage)
+            card_damage_table.set_index('id', inplace=True, drop=False)
+            card_damage_table.sort_values(by='adjustedDamage', ascending=False, inplace=True)
+            # get the highest damage target that isn't LimitBreak
+            optimal_target = card_damage_table[card_damage_table['role'] != 'LimitBreak']['adjustedDamage'].idxmax()
+
+            if optimal_target is None:
+                optimal_target = 'Nobody?'
+            else:
+                optimal_target = actors.players[optimal_target].name
+
+            correct = False
+            if optimal_target == actors.players[card.target].name:
+                correct = True
+
+            card_play_data = {
+                'cardPlayTime': fight_info.ToString(time=card.start),
+                'cardDuration': timedelta(milliseconds=card.end-card.start).total_seconds(),                
+                'cardPlayed': card.name,
+                'cardSource': card.source,
+                'cardTarget': card.target,
+                'cardDamageTable': card_damage_table.to_dict(orient='records'),
+                'cardOptimalTarget': optimal_target,
+                'cardCorrect': correct,
+            }
+        else:
+            card_play_data = {
+                'cardPlayTime': 0,
+                'cardTiming': 'N/A',
+                'cardDuration': 0,
+                'cardPlayed': 'None',
+                'cardSource': 0,
+                'cardTarget': 0,
+                'cardDamageTable': None,
+                'cardOptimalTarget': 0,
+                'cardCorrect': False,
+            }
+        
+        # now we can begin compiling data for the draw window as a whole
+        card_draw_data = {}
+
+        # check for any cards that are active during the current search window
+        active_cards = []
+        for c in cards:
+            if c.end > draw.start or c.start < draw.end:
+                active_cards.append(c)
+
+        # creates a search window from the start of the draw window to the end
+        # with a 15s duration and 1s step size
+        search_window = SearchWindow(draw.start, draw.end, 15000, 1000)
+        
+        # this uses the damage report with all card bonuses removed
+        draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
+
+        draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
+        # print('\tDone.')
+
+        draw_damage = []
+
+        data_count = 0
+        if draw_window_duration < 4.0:
+            data_count = 3
+        elif draw_window_duration < 10.0:
+            data_count = 5
+        elif draw_window_duration < 20.0:
+            data_count = 8
+        else:
+            data_count = 10
+
+        # print(draw_window_damage_collection.df)
+        # print('min: {}'.format(draw_window_damage_collection.df.min().min()))
+        # print('\tPopulating draw window damage table...')
+
+        (timestamp, pid, damage) = draw_window_damage_collection.GetMax()
+        collected_count = 1
+        draw_damage.append({
+            'count': collected_count,
+            'id': pid,
+            'damage': damage,
+            'timestamp': timestamp,
+            'time': fight_info.ToString(time=timestamp)[:5],
+        })
+        # print('\t\tFound: {}'.format(collected_count))
+        optimal_time = timestamp
+        optimal_target = actors.players[pid].name
+        optimal_damage = damage
+        
+        current_damage = damage
+        while (collected_count < data_count and current_damage > draw_window_damage_collection.df.min().min()):
+            # get the next lowest damage instance
+            # print('\t\tCurrent: max value {}'.format(current_damage))
+            (time_new, pid_new, damage_new) = draw_window_damage_collection.GetMax(limit=current_damage)
+
+            # update the max damage value we've looked up
+            current_damage = damage_new
+
+            # if it's the same player in a window that's already 
+            # recorded skip it
+            ignore_entry = False
+            for table_entry in draw_damage:
+                # print('Comparing {}/{} and {}/{}'.format(pid_new, time_new, table_entry['pid'], table_entry['timestamp']))
+                if pid_new == table_entry['id'] and abs(time_new - table_entry['timestamp']) < 4000:
+                    ignore_entry = True
+                
+            if ignore_entry:
+                # print('\t\tIgnoring...')
+                continue
+
+            # if the max damage is 0 then we're done and can exit
+            if damage_new == 0:
+                # print('\t\tNo more results to search...')
                 break
 
-        if not correct:
-            correct = 'Nobody?'
-        
-        results.append({
-            'damages': corrected_damage_list,
-            'timing': str(timing)[2:11],
-            'duration': timedelta(milliseconds=card['end']-card['start']).total_seconds(),
-            'source': card['source'],
-            'target': card['target'],
-            'card': card['name'],
-            'cardtype': card['type'],
-            'correct': correct,
-            'correctType': correct_type,        
-        })
-        
+            # otherwise we should add the entry to the table
+            collected_count += 1
+            draw_damage.append({
+                'count': collected_count,
+                'id': pid_new,
+                'damage': damage_new,
+                'timestamp': time_new,
+                'time': fight_info.ToString(time=time_new)[:5],
+            })
+            # print('\t\tFound: {}'.format(collected_count))
 
-    # results['duration'] = encounter_info['enc_dur']
-    return results, friends, encounter_info, cards
+        draw_damage_table = pd.DataFrame(draw_damage)
+        draw_damage_table.set_index('id', inplace=True, drop=False)
+        draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
 
-def get_last_fight_id(report):
-    """Get the last fight in the report"""
-    report_data = fflogs_api('fights', report)
+        card_draw_data = {
+            'startTime': fight_info.ToString(time=draw.start),
+            'endTime': fight_info.ToString(time=draw.end),
+            'startEvent': draw.startEvent,
+            'endEvent': draw.endEvent,
+            'drawDamageTable': draw_damage_table.to_dict(orient='records'),
+            'drawOptimalTime': fight_info.ToString(time=optimal_time),
+            'drawOptimalTarget': optimal_target,
+            'drawOptimalDamage': optimal_damage,
+            'count': count,
+        }
 
-    return report_data['fights'][-1]['id']
+        # finally combine the two sets of data and append it to the collection
+        # of data for each draw window/card play
+        combined_data = card_draw_data | card_play_data
+        cardcalc_data.append(combined_data)
+        # print('\tDone.\n')
 
-def get_friends_and_pets(report, fight_id):
-    """
-    Reads an FFLogs report and solves for optimal Card Usage
-    """
-
-    report_data = fflogs_api('fights', report)
-
-    version = report_data['logVersion']
-
-    fight = [fight for fight in report_data['fights'] if fight['id'] == fight_id][0]
-
-    if not fight:
-        raise CardCalcException("Fight ID not found in report")
-
-    encounter_start = fight['start_time']
-    encounter_end = fight['end_time']
-
-    encounter_timing = timedelta(milliseconds=fight['end_time']-fight['start_time'])
 
     encounter_info = {
-        'enc_name': fight['name'],
-        'enc_time': str(encounter_timing)[2:11],
-        'enc_kill': fight['kill'] if 'kill' in fight else False,
-        # 'enc_dur': int(encounter_timing.total_seconds()),
+        'enc_name': fight_info.name,
+        'enc_time': fight_info.ToString(),
+        'enc_kill': fight_info.kill,
     }
-
-    friends = {friend['id']: friend for friend in report_data['friendlies']}
-    pets = {pet['id']: pet for pet in report_data['friendlyPets']}
-
-    return (friends, pets)
+    return cardcalc_data, actors.to_dict(), encounter_info

@@ -5,20 +5,25 @@ from urllib.parse import urlparse, parse_qs
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
-from cardcalc import cardcalc, get_last_fight_id, CardCalcException
+
+from fflogsapi import decompose_url, get_bearer_token
+from cardcalc_data import  CardCalcException
+from cardcalc import cardcalc
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-LAST_CALC_DATE = datetime.fromtimestamp(1563736200)
+LAST_CALC_DATE = datetime.fromtimestamp(1611676663)
+
+token = get_bearer_token()
 
 class Report(db.Model):
     report_id = db.Column(db.String(16), primary_key=True)
     fight_id = db.Column(db.Integer, primary_key=True)
     results = db.Column(db.JSON)
-    friends = db.Column(db.JSON)
+    actors = db.Column(db.JSON)
     enc_name = db.Column(db.String(64))
     enc_time = db.Column(db.String(9))
     enc_kill = db.Column(db.Boolean)
@@ -28,25 +33,8 @@ class Count(db.Model):
     count_id = db.Column(db.Integer, primary_key=True)
     total_reports = db.Column(db.Integer)
 
-def decompose_url(url):
-    parts = urlparse(url)
-
-    report_id = [segment for segment in parts.path.split('/') if segment][-1]
-    try:
-        fight_id = parse_qs(parts.fragment)['fight'][0]
-    except KeyError:
-        raise CardCalcException("Fight ID is required. Select a fight first")
-
-    if fight_id == 'last':
-        fight_id = get_last_fight_id(report_id)
-
-    fight_id = int(fight_id)
-
-    return report_id, fight_id
-
 def increment_count(db):
     count = Count.query.get(1)
-
 
     # TODO: Fix this
     try:
@@ -73,7 +61,7 @@ def homepage():
     if request.method == 'POST':
         report_url = request.form['report_url']
         try:
-            report_id, fight_id = decompose_url(report_url)
+            report_id, fight_id = decompose_url(report_url, token)
         except CardCalcException as exception:
             return render_template('error.html', exception=exception)
 
@@ -120,12 +108,12 @@ def calc(report_id, fight_id):
         # Recompute if no computed timestamp
         if not report.computed or report.computed < LAST_CALC_DATE:
             try:
-                results, friends, encounter_info, cards = cardcalc(report_id, fight_id)
+                results, actors, encounter_info = cardcalc(report_id, fight_id, token)
             except CardCalcException as exception:
                 return render_template('error.html', exception=exception)
 
             report.results = results
-            report.friends = friends
+            report.actors = actors
             report.enc_name = encounter_info['enc_name']
             report.enc_time = encounter_info['enc_time']
             report.enc_kill = encounter_info['enc_kill']
@@ -133,19 +121,21 @@ def calc(report_id, fight_id):
 
             db.session.commit()
 
+        # TODO: this is gonna cause some issues
         # These get returned with string keys, so have to massage it some
-        friends = {int(k):v for k,v in report.friends.items()}
+        actors = {int(k):v for k,v in report.actors.items()}
 
     else:
         try:
-            results, friends, encounter_info, cards = cardcalc(report_id, fight_id)
+            results, actors, encounter_info = cardcalc(report_id, fight_id, token)
         except CardCalcException as exception:
             return render_template('error.html', exception=exception)
+
         report = Report(
             report_id=report_id,
             fight_id=fight_id,
             results=results,
-            friends=friends,
+            actors=actors,
             **encounter_info
             )
         try:
@@ -164,4 +154,4 @@ def calc(report_id, fight_id):
             # in which case we don't need to do anything besides redirect
             pass
 
-    return render_template('calc.html', report=report, friends=friends)
+    return render_template('calc.html', report=report, actors=actors)

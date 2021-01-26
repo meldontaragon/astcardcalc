@@ -17,8 +17,13 @@ flask-migrate = "*"
 flask-sqlalchemy = "*"
 gunicorn = "*"
 "psycopg2-binary" = "*"
-
+"requests_oauthlib" = "*"
+"oauthlib" = "*"
+"python_graphql_client" = "*"
+"plotly" = "*"
+"pandas" = "*"
+"numpy" = "*"
 
 [requires]
 
-python_version = "3.6"
+python_version = "3.9"
