@@ -64,45 +64,96 @@
         }
 
         /* the following is for the tabs */
-        .tabs {
-            position: relative;
-            display: block;
-            min-height: 650px;
-             /* This part sucks */
-            clear: both;
-            margin: 25px 0;
+        .tabset {
+            margin-top: 15px;
+            margin-bottom: 15px;
         }
-        .tab {
-            float: left;
+
+        .tabset > input {
+            display:block; /* "enable" hidden elements in IE/edge */
+            position:absolute; /* then hide them off-screen */
+            left:-100%;
         }
-        .tab label {
-            background: #eee; 
-            padding: 5px; 
-            border: 1px solid #ccc; 
-            margin-left: 1px; 
-            left: 1px; 
+
+        .tabset > ul {
+            position:static;
+            z-index:999;
+            list-style:none;
+            display:flex;
+            margin-bottom:-9px;
+            margin-left: -40px;
         }
-        .tab [type=radio] {
-            display: none;   
+
+        .tabset > ul label,
+        .tabset > div {
+            /* border:1px solid hsl(0, 0%, 40%); */
+            border:1px solid  rgba(29, 49, 44, 0.733);
         }
-        .content {
-            position: absolute;
-            display: flex;
-            top: 28px;
-            left: 0;
-            background: white;
-            right: 0;
-            bottom: 28px;
-            padding: 20px;
-            border: 1px solid #ccc; 
+
+        .tabset > ul label {
+            display:inline-block;
+            padding:0.5em 2em;
+            background:hsl(0, 0%, 100%);
+            border-right-width:0;
         }
-        [type=radio]:checked ~ label {
-            background: white;
-            border-bottom: 1px solid white;
-            z-index: 2;
+
+        .tabset > ul li:first-child label {
+            border-radius:0.3em 0 0 0;
         }
-        [type=radio]:checked ~ label ~ .content {
-            z-index: 1;
+
+        .tabset > ul li:last-child label {
+            border-right-width:1px;
+            border-radius:0 0.3em 0 0;
+        }
+
+        .tabset > div {
+        position:relative;
+        background:hsl(0, 0%, 100%);
+        border-radius:0em 0.3em 0.3em 0.3em;
+        }
+
+        .tabset > input:nth-child(1):checked ~ ul li:nth-child(1) label,
+        .tabset > input:nth-child(2):checked ~ ul li:nth-child(2) label,
+        .tabset > input:nth-child(3):checked ~ ul li:nth-child(3) label,
+        .tabset > input:nth-child(4):checked ~ ul li:nth-child(4) label,
+        .tabset > input:nth-child(5):checked ~ ul li:nth-child(5) label,
+        .tabset > input:nth-child(6):checked ~ ul li:nth-child(6) label,
+        .tabset > input:nth-child(7):checked ~ ul li:nth-child(7) label,
+        .tabset > input:nth-child(8):checked ~ ul li:nth-child(8) label,
+        .tabset > input:nth-child(9):checked ~ ul li:nth-child(9) label {
+        border-bottom-color:hsl(0, 0%, 83%);
+        background: rgba(120, 194, 173, 0.5)
+        }
+
+        .tabset > div > section,
+        .tabset > div > section h2 {
+        position:absolute;
+        top:-999em;
+        left:-999em;
+        }
+        .tabset > div > section {
+        padding:1em 1em 0;
+        }
+
+        .tabset > input:nth-child(1):checked ~ div > section:nth-child(1),
+        .tabset > input:nth-child(2):checked ~ div > section:nth-child(2),
+        .tabset > input:nth-child(3):checked ~ div > section:nth-child(3),
+        .tabset > input:nth-child(4):checked ~ div > section:nth-child(4),
+        .tabset > input:nth-child(5):checked ~ div > section:nth-child(5),
+        .tabset > input:nth-child(6):checked ~ div > section:nth-child(6),
+        .tabset > input:nth-child(7):checked ~ div > section:nth-child(7),
+        .tabset > input:nth-child(8):checked ~ div > section:nth-child(8),
+        .tabset > input:nth-child(9):checked ~ div > section:nth-child(9) {
+        position:Static;
+        }
+
+        .tabset > ul label {
+        -webkit-touch-callout:none;
+        -webkit-user-select:none;
+        -khtml-user-select:none;
+        -moz-user-select:none;
+        -ms-user-select:none;
+        user-select:none;
         }
 
     </style>

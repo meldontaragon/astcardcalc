@@ -10,105 +10,121 @@
     </div>
     
     {% for result in report.results %}
-    <div class="tabs">
-        <div class="tab">
-            <input type="radio" id="tab-cardplay-{{ result['count'] }}" name="tab-cards-{{ result['count'] }}" checked>
-            <label for="tab-cardplay-{{ result['count'] }}">Card Play</label>
-            <div class="content">
-                {% if result.cardPlayed != 'None' %}
-                <div class="row result-row mb-2 p-2">
-                <div class="col">
-                    <p>
-                        <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
-                        played 
-                        <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
-                        on
-                        <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
-                        at
-                        <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
-                    </p>
-                    <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
-        
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th scope="col">Player</th>
-                                <th scope="col">Job</th>
-                                <th scope="col">Adjusted Damage</th>
-                                <th scope="col">Raw Damage</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for damage in result['cardDamageTable'] %}
-                            {% if actors[damage['id']]['role'] != 'LimitBreak' %}
-                                <tr>
-                                    <td>{{ actors[damage['id']]['name'] }}</td>
-                                    <td>{{ actors[damage['id']]['job'] }}</td>
-                                    <td>{{ damage['adjustedDamage'] }}</td>
-                                    <td>{{ damage['realDamage'] }}</td>
-                                </tr>
-                            {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                <hr>
-                </div>
-                {% else %}
-                <div class="row result-row mb-2 p-2">
-                    No card was played in this draw window (likely a result of Divination being cast)
-                </div>
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="tab">
-            <input type="radio" id="tab-carddraw-{{ result['count'] }}" name="tab-cards-{{ result['count'] }}">
-            <label for="tab-carddraw-{{ result['count'] }}">Card Draw</label>
-
-            <div class="content">
-                <div class="row result-row mb-2 p-2">
+    <div class="tabset">
+        <input 
+            type="radio" 
+            id="tab-cardplay-{{ result['count'] }}" 
+            name="tab-cards-{{ result['count'] }}" 
+            checked
+            aria-hidden="true"
+        >
+        <input 
+            type="radio" 
+            id="tab-carddraw-{{ result['count'] }}" 
+            name="tab-cards-{{ result['count'] }}"
+            aria-hidden="true"
+        >
+        <ul aria-hidden="true">
+            <li><label for="tab-cardplay-{{ result['count'] }}">Card Play</label></li>
+            <li><label for="tab-carddraw-{{ result['count'] }}">Card Draw</label></li>
+        </ul>
+        <div>
+            <section>
+                <h2>Card Play</h2>
+                <div class="content">
+                    {% if result.cardPlayed != 'None' %}
+                    <div class="row result-row mb-2 p-2">
                     <div class="col">
                         <p>
-                            From 
-                            <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
-                            at 
-                            <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
-                            until 
-                            <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                            <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
+                            played 
+                            <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
+                            on
+                            <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
                             at
-                            <span class="badge badge-secondary">{{ result['endTime'] }}</span>
+                            <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
-                        <p>
-                            The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTarget'] }}</span>
-                            at <span class="badge badge-secondary">{{ result['drawOptimalTime'] }}</span>.
-                        </p>
+                        <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
             
                         <table class="table table-striped">
                             <thead>
                                 <tr>
-                                    <th scope="col">Play Time</th>
                                     <th scope="col">Player</th>
                                     <th scope="col">Job</th>
-                                    <th scope="col">Damage</th>
+                                    <th scope="col">Adjusted Damage</th>
+                                    <th scope="col">Raw Damage</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for damage in result['drawDamageTable'] %}
-                                <tr>
-                                    <td>{{ damage['time'] }}</td>
-                                    <td>{{ actors[damage['id']]['name'] }}</td>
-                                    <td>{{ actors[damage['id']]['job'] }}</td>
-                                    <td>{{ damage['damage'] }}</td>
-                                </tr>
+                                {% for damage in result['cardDamageTable'] %}
+                                {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                    <tr>
+                                        <td>{{ actors[damage['id']]['name'] }}</td>
+                                        <td>{{ actors[damage['id']]['job'] }}</td>
+                                        <td>{{ damage['adjustedDamage'] }}</td>
+                                        <td>{{ damage['realDamage'] }}</td>
+                                    </tr>
+                                {% endif %}
                                 {% endfor %}
                             </tbody>
                         </table>
                     </div>
                     <hr>
+                    </div>
+                    {% else %}
+                    <div class="row result-row mb-2 p-2">
+                        No card was played in this draw window (likely a result of Divination being cast)
+                    </div>
+                    {% endif %}
                 </div>
-            </div>
+            </section>
 
+            <section>
+                <h2>Card Draw</h2>
+                <div class="content">
+                    <div class="row result-row mb-2 p-2">
+                        <div class="col">
+                            <p>
+                                From 
+                                <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                at 
+                                <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
+                                until 
+                                <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                at
+                                <span class="badge badge-secondary">{{ result['endTime'] }}</span>
+                            </p>
+                            <p>
+                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTarget'] }}</span>
+                                at <span class="badge badge-secondary">{{ result['drawOptimalTime'] }}</span>.
+                            </p>
+                
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Play Time</th>
+                                        <th scope="col">Player</th>
+                                        <th scope="col">Job</th>
+                                        <th scope="col">Damage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['drawDamageTable'] %}
+                                    <tr>
+                                        <td>{{ damage['time'] }}</td>
+                                        <td>{{ actors[damage['id']]['name'] }}</td>
+                                        <td>{{ actors[damage['id']]['job'] }}</td>
+                                        <td>{{ damage['damage'] }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr>
+                    </div>
+
+                </div>
+            </section>
         </div>
     </div>
     {% endfor %}
