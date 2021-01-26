@@ -60,6 +60,9 @@ class ActorList:
         self.actors = pd.DataFrame(actors)
         self.actors.set_index('id', drop=False, inplace=True)
 
+    def to_dict(self):
+        return self.actors.to_dict(orient='index')
+
     def PrintAll(self):
         tabular = '{:<24}{:>4}  {}'
         print('Players')
@@ -84,12 +87,12 @@ class ActorList:
             print(tabular.format(p.name, p.id, p.job))
 
     def PrintPets(self):
-        tabular = '{:<24}{:>4}  {}'
+        tabular = '{:<24}{:>4}  {:>5}  {}'
         print('Pets')
-        print(tabular.format('Name','ID','Owner'))
+        print(tabular.format('Name','ID','OID','Owner'))
         print('-'*40)
         for _, p in self.pets.items():
-            print(tabular.format(p.name, p.id, self.players[p.owner].name))
+            print(tabular.format(p.name, p.id, p.owner, self.players[p.owner].name))
 
     def GetPlayerID(self, name):
         for i, p in self.players.items():
@@ -109,6 +112,9 @@ class CardPlay:
         self.role = CardPlay.GetRole(id)
         self.bonus = CardPlay.GetBonus(id)
 
+    def __str__(self):
+        return f'{self.source} played {self.name} on {self.target} at {self.start}'
+
     def to_dict(self): 
         return {
             'source': self.source,
@@ -121,9 +127,6 @@ class CardPlay:
             'role': self.role,
             'bonus': self.bonus,
         }
-
-    def __str__(self):
-        return '{} played {} on {} at {}'.format(self.source, self.name, self.target, self.start)
 
     def String(self, player_list, start_time):
         return '{} played {} on {} at {}'.format(player_list[self.source]['name'], self.name, player_list[self.target]['name'], str(timedelta(milliseconds=(self.start-start_time)))[2:11])
@@ -190,6 +193,9 @@ class DrawWindow(BurstWindow):
         self.end = end
         self.startEvent = startEvent
         self.endEvent = endEvent
+
+    def __str__(self):
+        return f'From {self.startEvent} at {self.start} to {self.endEvent} at {self.end}'
 
     def to_dict(self): 
         return {
@@ -279,7 +285,7 @@ class BurstDamageCollection:
 
         # if a limit is provided (limit > 0) then only search values less than the limit
         if limit > 0:
-            mod_df = self.df.apply(lambda x: [y if y <= limit else 0 for y in x])
+            mod_df = self.df.apply(lambda x: [y if y < limit else 0 for y in x])
         else:
             mod_df = self.df
 

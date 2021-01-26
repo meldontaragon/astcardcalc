@@ -66,6 +66,9 @@ def decompose_url(url):
         fight_id = parse_qs(parts.fragment)['fight'][0]
     except KeyError:
         raise CardCalcException("Fight ID is required. Select a fight first")
+    
+    if (fight_id != 'last'):
+        fight_id = int(fight_id)
 
     return report_id, fight_id
 
@@ -186,7 +189,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
             draws: events(
                 startTime: $startTime,
                 endTime: $endTime,
-                filterExpression: "ability.id in (3590, 7448, 3593, 1000915, 1000913, 1000914, 1000917, 1000916, 1000918)"
+                filterExpression: "ability.id in (3590, 7448, 16552, 3593, 1000915, 1000913, 1000914, 1000917, 1000916, 1000918)"
                 ) {
                     data
                 }
