@@ -41,6 +41,7 @@ class Pet:
         return {
             'id': self.id,
             'name': self.name,
+            'job': 'pet',
             'role': 'pet',
             'owner': self.owner
         }
