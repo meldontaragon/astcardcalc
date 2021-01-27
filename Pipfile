@@ -8,7 +8,6 @@ name = "pypi"
 [dev-packages]
 
 
-
 [packages]
 
 requests = "*"
@@ -16,13 +15,13 @@ flask = "*"
 flask-migrate = "*"
 flask-sqlalchemy = "*"
 gunicorn = "*"
-"psycopg2-binary" = "*"
-"requests_oauthlib" = "*"
-"oauthlib" = "*"
-"python_graphql_client" = "*"
-"plotly" = "*"
-"pandas" = "*"
-"numpy" = "*"
+psycopg2-binary = "*"
+requests_oauthlib = "*"
+oauthlib = "*"
+python_graphql_client = "*"
+plotly = "*"
+pandas = "*"
+
 
 [requires]
 

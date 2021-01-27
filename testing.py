@@ -8,14 +8,10 @@ from damagecalc import search_burst_window, calculate_tick_snapshot_damage, calc
 from cardcalc import cardcalc
 
 import pandas as pd
-import numpy as np
 
 import plotly.io as pio
 import plotly.express as px
 import plotly.graph_objects as go
-
-import scipy.signal as sig
-import scipy as scipy
 
 def test_to_dict_damage_table(card_damage_table):
     print(card_damage_table)
@@ -65,19 +61,17 @@ token = get_bearer_token()
 # url = 'https://www.fflogs.com/reports/byLqHjz8MnphQP3r#fight=1'
 # url = 'https://www.fflogs.com/reports/TmzFDHfWL8bhdMAn#fight=6'
 # url = 'https://www.fflogs.com/reports/fZXhDbTjw7GWmKLz#fight=2'
-url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
+# url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
+url = 'https://www.fflogs.com/reports/AkjHFtzwBMWJQdaY#fight=12&type=damage-done'
 
 report_id, fight_id = decompose_url(url, token)
 
-fight_info = get_fight_info(report_id, fight_id, token)
-actor_list = get_actor_lists(fight_info, token)
+# fight_info = get_fight_info(report_id, fight_id, token)
+# actor_list = get_actor_lists(fight_info, token)
 
-damage_data = get_damage_events(fight_info, token)
+# damage_data = get_damage_events(fight_info, token)
 
-damage_report = calculate_tick_snapshot_damage(damage_data)
-print(damage_report.loc[lambda df: df['timestamp'] > 1489968])
-print('Intentionally Empty')
-print(damage_report.loc[lambda df: (df['timestamp'] > 1489968) & (df['sourceID'] == 3)])
+# damage_report = calculate_tick_snapshot_damage(damage_data)
 
 cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
 print(cardcalc_data)

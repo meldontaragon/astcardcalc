@@ -136,10 +136,7 @@ def cardcalc(report, fight_id, token):
     
     # get actors
     actors = get_actor_lists(fight_info, token)
-
-    # actors.PrintPlayers()
-    # actors.PrintPets()
-
+    
     # Build the list of card plays and draw windows
     card_events = get_card_play_events(fight_info, token)
     draw_events = get_card_draw_events(fight_info, token)
@@ -163,6 +160,7 @@ def cardcalc(report, fight_id, token):
         if card.target not in actors.players:
             cards.remove(card)
 
+            
     # go through each draw windows and calculate the following
     # (1.) Find the card played during this window and get the damage dealt by
     #      each player during that play window
@@ -191,20 +189,17 @@ def cardcalc(report, fight_id, token):
         # find if there was a card played in this window
         card = None
         for c in cards:
-            if c.start > draw.start and c.start < draw.end:
+            # check if card was played on a player (since sometimes pet cards sneak through) and was played between the start and end of the draw window
+            if c.start > draw.start and c.start < draw.end and c.target in actors.players:
                 card = c
                 break
         
-        # print(draw)
-
         # only handle the play window if there was a card played
         card_play_data = {}
         if card is not None:
-            # print(card)
+
             # compute damage done during card play window
-            # print('\tComputing card play damage...')
             (_, damages, _) = calculate_total_damage(damage_report, card.start, card.end, actors)
-            # print('\tDone.')
             # check what multiplier should be used to remove the damage bonus
             mult = 0
             if actors.players[card.target].role == card.role:
@@ -297,7 +292,6 @@ def cardcalc(report, fight_id, token):
         draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
-        # print('\tDone.')
 
         draw_damage = []
 
@@ -311,10 +305,6 @@ def cardcalc(report, fight_id, token):
         else:
             data_count = 10
 
-        # print(draw_window_damage_collection.df)
-        # print('min: {}'.format(draw_window_damage_collection.df.min().min()))
-        # print('\tPopulating draw window damage table...')
-
         (timestamp, pid, damage) = draw_window_damage_collection.GetMax()
         collected_count = 1
         draw_damage.append({
@@ -324,7 +314,7 @@ def cardcalc(report, fight_id, token):
             'timestamp': timestamp,
             'time': fight_info.ToString(time=timestamp)[:5],
         })
-        # print('\t\tFound: {}'.format(collected_count))
+        
         optimal_time = timestamp
         optimal_target = actors.players[pid].name
         optimal_damage = damage
@@ -332,7 +322,6 @@ def cardcalc(report, fight_id, token):
         current_damage = damage
         while (collected_count < data_count and current_damage > draw_window_damage_collection.df.min().min()):
             # get the next lowest damage instance
-            # print('\t\tCurrent: max value {}'.format(current_damage))
             (time_new, pid_new, damage_new) = draw_window_damage_collection.GetMax(limit=current_damage)
 
             # update the max damage value we've looked up
@@ -342,17 +331,14 @@ def cardcalc(report, fight_id, token):
             # recorded skip it
             ignore_entry = False
             for table_entry in draw_damage:
-                # print('Comparing {}/{} and {}/{}'.format(pid_new, time_new, table_entry['pid'], table_entry['timestamp']))
                 if pid_new == table_entry['id'] and abs(time_new - table_entry['timestamp']) < 4000:
                     ignore_entry = True
                 
             if ignore_entry:
-                # print('\t\tIgnoring...')
                 continue
 
             # if the max damage is 0 then we're done and can exit
             if damage_new == 0:
-                # print('\t\tNo more results to search...')
                 break
 
             # otherwise we should add the entry to the table
@@ -364,7 +350,6 @@ def cardcalc(report, fight_id, token):
                 'timestamp': time_new,
                 'time': fight_info.ToString(time=time_new)[:5],
             })
-            # print('\t\tFound: {}'.format(collected_count))
 
         draw_damage_table = pd.DataFrame(draw_damage)
         draw_damage_table.set_index('id', inplace=True, drop=False)
@@ -386,8 +371,6 @@ def cardcalc(report, fight_id, token):
         # of data for each draw window/card play
         combined_data = card_draw_data | card_play_data
         cardcalc_data.append(combined_data)
-        # print('\tDone.\n')
-
 
     encounter_info = {
         'enc_name': fight_info.name,

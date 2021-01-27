@@ -95,8 +95,6 @@ def remove_card_damage(damage_report, cards, actors):
         # check the real bonus received
         eff_bonus = 1.0
 
-        print(card)
-
         if card.target in actors.players:
             if card.role == actors.players[card.target].role:
                 eff_bonus = card.bonus
@@ -168,10 +166,8 @@ def search_burst_window(damage_report, search_window: SearchWindow, actors: Acto
     interval_end = interval_start + search_window.duration
 
     damage_collection = []
-    # print('\t\tStarting search in window from {} to {}'.format(search_window.start, search_window.end))
 
     while interval_start < search_window.end:
-        # print('\t\t\tSearching at {}...'.format(interval_start))
         (_, total_damage, _) = calculate_total_damage(damage_report, interval_start, interval_end, actors)
         
         # add all values to the collection at this timestamp
@@ -181,11 +177,9 @@ def search_burst_window(damage_report, search_window: SearchWindow, actors: Acto
 
         interval_start += search_window.step
         interval_end = interval_start + search_window.duration
-        # print('\t\t\tDone.')
 
     damage_df = pd.DataFrame(damage_collection)
     damage_df.set_index('timestamp', drop=True, inplace=True)
-    # print('\t\tDone with full search.')
     return BurstDamageCollection(damage_df, search_window.duration)
 
 
