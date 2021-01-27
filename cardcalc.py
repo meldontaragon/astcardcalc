@@ -286,7 +286,7 @@ def cardcalc(report, fight_id, token):
 
         # creates a search window from the start of the draw window to the end
         # with a 15s duration and 1s step size
-        search_window = SearchWindow(draw.start, draw.end, 15000, 1000)
+        search_window = SearchWindow(draw.start, draw.end, 15000, 3000)
         
         # this uses the damage report with all card bonuses removed
         draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
