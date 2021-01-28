@@ -1,6 +1,11 @@
 .python-version
 __pycache__/
+
 sample/
 sample/*
+
 .exports
 index.html
+
+*~
+.*~

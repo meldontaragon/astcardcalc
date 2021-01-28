@@ -356,7 +356,7 @@ def cardcalc(report, fight_id, token):
 
         # 15s search window corresponding to possible card plays 
         # during the draw window and then search it 
-        search_window = SearchWindow(draw.start, draw.end, 15000, 3000)
+        search_window = SearchWindow(draw.start, draw.end, 15000, 1000)
         draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
