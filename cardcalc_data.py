@@ -275,7 +275,7 @@ class BurstDamageCollection:
 
     # this returns a tuple with the (timestamp, id, damage) set which is the
     # max 
-    def GetMax(self, pid=None, time=None, limit=0):
+    def get_max(self, pid=None, time=None, limit=0):
         # Options:
         # (1) if there is no time and no id then find overall max
         # (2) if there is no time but an id then find max for that id
@@ -285,7 +285,10 @@ class BurstDamageCollection:
         #     timestamp assuming it's valid
 
         # if a limit is provided (limit > 0) then only search values less than the limit
+        # TODO: this is actually really slow, would like to improve it
         if limit > 0:
+            # array = np.array(self.df.values.tolist())
+            # mod_df = pd.DataFrame(np.where(array > limit, 0, array).tolist(), index=self.df.index, columns=self.df.columns)
             mod_df = self.df.apply(lambda x: [y if y < limit else 0 for y in x])
         else:
             mod_df = self.df

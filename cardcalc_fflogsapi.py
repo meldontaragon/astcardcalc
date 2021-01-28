@@ -7,15 +7,14 @@ and damagecalc
 from datetime import timedelta
 import os
 
-# local imports
-from cardcalc_data import Player, Pet, FightInfo, CardCalcException, ActorList
-
 # Imports related to making API requests
-# import requests
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import BackendApplicationClient
 from python_graphql_client import GraphqlClient
 from urllib.parse import urlparse, parse_qs
+
+# local imports
+from cardcalc_data import Player, Pet, FightInfo, CardCalcException, ActorList
 
 FFLOGS_CLIENT_ID = os.environ['FFLOGS_CLIENT_ID']
 FFLOGS_CLIENT_SECRET = os.environ['FFLOGS_CLIENT_SECRET']
@@ -26,7 +25,7 @@ FFLOGS_URL = 'https://www.fflogs.com/api/v2/client'
 client = GraphqlClient(FFLOGS_URL)
 
 # this is used to handle sorting events
-def event_priority(event):
+def _event_priority(event):
     return {
         'applydebuff': 1,
         'applybuff': 1,
@@ -222,38 +221,6 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
     
     return card_events
 
-# this shouldn't be used much but can be useful so I'm leaving it in
-def get_damages(fight_info: FightInfo, token):
-    variables = {
-        'code': fight_info.id,
-        'startTime': fight_info.start,
-        'endTime': fight_info.end,
-    }
-    query = """
-query reportData ($code: String!, $startTime: Float!, $endTime: Float!) {
-    reportData {
-        report(code: $code) {
-            table(
-                startTime: $startTime, 
-                endTime: $endTime,
-                dataType: DamageDone,
-                filterExpression: "isTick='false'",
-                viewBy: Source
-                )
-        }
-    }
-}"""
-    
-    data = call_fflogs_api(query, variables, token)
-    damage_entries = data['data']['reportData']['report']['table']['data']['entries']
-
-    damages = {}
-
-    for d in damage_entries:
-        damages[d['id']] = d['total']
-
-    return damages
-
 def get_damage_events(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
@@ -313,7 +280,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
     tick_events = data['data']['reportData']['report']['tickEvents']['data']
     ground_events = data['data']['reportData']['report']['groundEvents']['data']
 
-    combined_tick_events = sorted((tick_damages + tick_events + ground_events), key=lambda tick: (tick['timestamp'], event_priority(tick['type'])))
+    combined_tick_events = sorted((tick_damages + tick_events + ground_events), key=lambda tick: (tick['timestamp'], _event_priority(tick['type'])))
 
     damage_events = {
         'rawDamage': base_damages,

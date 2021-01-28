@@ -6,9 +6,9 @@ from flask import Flask, render_template, request, redirect, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 
-from fflogsapi import decompose_url, get_bearer_token
+from cardcalc_fflogsapi import decompose_url, get_bearer_token
 from cardcalc_data import  CardCalcException
-from cardcalc import cardcalc
+from cardcalc_cards import cardcalc
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']

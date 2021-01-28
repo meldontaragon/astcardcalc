@@ -1,24 +1,23 @@
-from datetime import timedelta
 import os
+import profile
+import pstats
+
+from datetime import timedelta
 from urllib.parse import urlparse, parse_qs
 
-from fflogsapi import get_bearer_token, get_actor_lists, get_damage_events, get_fight_info, decompose_url
-from cardcalc_data import ActorList, FightInfo, SearchWindow, CardCalcException
-from damagecalc import search_burst_window, calculate_tick_snapshot_damage, calculate_tick_damage, time_averaged_dps
-from cardcalc import cardcalc
-
 import pandas as pd
-
+import numpy as np
 import plotly.io as pio
 import plotly.express as px
 import plotly.graph_objects as go
 
-def test_to_dict_damage_table(card_damage_table):
-    print(card_damage_table)
+from cardcalc_data import ActorList, FightInfo, SearchWindow, CardCalcException
 
-def test_to_dict_actor_list(actor_list):
-    test_dict = actor_list.to_dict()
-    print(test_dict)
+from cardcalc_fflogsapi import get_bearer_token, get_actor_lists, get_damage_events, get_fight_info, decompose_url
+
+from cardcalc_damage import search_burst_window, calc_snapshot_damage, calc_tick_damage, compute_time_averaged_dps, compute_total_damage
+
+from cardcalc_cards import cardcalc
 
 def test_plotting():
     # df_base.set_index(pd.TimedeltaIndex(data=df_base['timestamp'].apply(lambda x: fight_info.TimeElapsed(x)), unit='ms'), inplace=True)
@@ -54,7 +53,41 @@ def test_plotting():
 
     # pio.write_html(fig, file='index.html', auto_open=True)
 
-token = get_bearer_token()
+def testing_damage_report(url, token):
+    fight_info = get_fight_info(report_id, fight_id, token)
+    actor_list = get_actor_lists(fight_info, token)
+
+    damage_data = get_damage_events(fight_info, token)
+
+    damage_report = calculate_tick_snapshot_damage(damage_data)
+
+def run_card_calc(url, token):
+    report_id, fight_id = decompose_url(url, token)
+    cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
+    # print(cardcalc_data)
+
+def run_profile(url, token, filename):
+    profile.run('run_card_calc(url, token)', filename)
+    # profile.run('run_compute_total_damage(url, token)', filename)
+
+def read_stats(filename, sort_options = 'tottime', print_options = 'cardcalc_'):
+    stats = pstats.Stats(filename)
+    stats.strip_dirs()
+
+    stats.sort_stats(sort_options)
+    stats.print_stats(print_options, 10)
+
+def run_compute_total_damage(url, token):
+    report_id, fight_id = decompose_url(url, token)
+    fight_info = get_fight_info(report_id, fight_id, token)
+    actors = get_actor_lists(fight_info, token)
+    damage_events = get_damage_events(fight_info, token)
+    damage_report = calc_snapshot_damage(damage_events)
+
+    # damage = compute_total_damage(damage_report, fight_info.start, fight_info.end, actors)
+    search_burst_window(damage_report, SearchWindow(fight_info.start, fight_info.end, 15000, 1000), actors)
+
+###########################################################
 
 # url = 'https://www.fflogs.com/reports/MQjnkJ7YRwqCaLcN#fight=1'
 # url = 'https://www.fflogs.com/reports/KaCwVdgTQYhmRAxD#fight=10'
@@ -62,16 +95,59 @@ token = get_bearer_token()
 # url = 'https://www.fflogs.com/reports/TmzFDHfWL8bhdMAn#fight=6'
 # url = 'https://www.fflogs.com/reports/fZXhDbTjw7GWmKLz#fight=2'
 # url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
-url = 'https://www.fflogs.com/reports/AkjHFtzwBMWJQdaY#fight=12&type=damage-done'
+# url = 'https://www.fflogs.com/reports/AkjHFtzwBMWJQdaY#fight=12&type=damage-done'
+url = 'https://www.fflogs.com/reports/8jA937KGgXMp4mbn#fight=1&type=damage-done'
+token = get_bearer_token()
 
-report_id, fight_id = decompose_url(url, token)
+for i in range(0,10):
+    filename = 'profile_burst_loc_changes_{}.out'.format(i)
+    run_profile(url, token, filename)
 
-# fight_info = get_fight_info(report_id, fight_id, token)
-# actor_list = get_actor_lists(fight_info, token)
+sort_options = 'time'
+# sort_options = 'cumulative'
 
-# damage_data = get_damage_events(fight_info, token)
+output_options = 'cardcalc_'
+filename = 'profile_burst_loc_changes_{}.out'.format(0)
+stats = pstats.Stats(filename)
+for i in range(1,10):
+    filename = 'profile_burst_loc_changes_{}.out'.format(0)
+    stats.add(filename)
 
-# damage_report = calculate_tick_snapshot_damage(damage_data)
+stats.strip_dirs()
+stats.sort_stats(sort_options)
+stats.print_stats(output_options, 20)
 
-cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
-print(cardcalc_data)
+# read_stats(filename, output_option)
+
+# read_stats('profile_burst_window_search.out', output_option)
+# read_stats('profile_total_burst_damage_output.txt', output_option)
+
+def generate_sample_df():
+    tmp_dict = [
+        {
+            'time': 1,
+            'a': 5,
+            'b': 3,
+            'c': 10,},
+        {
+            'time': 2,
+            'a': 12,
+            'b': 129,
+            'c': 92,},
+        {
+            'time': 3,
+            'a': 12,
+            'b': 9,
+            'c': 0,}
+    ]
+    df =  pd.DataFrame(tmp_dict)
+    df.set_index('time', inplace=True, drop=True)
+    return df
+
+# df = generate_sample_df()
+# print(df.unstack())
+# print(df.unstack().tolist())
+
+# sorted_list = sorted(df.unstack().to_dict().items(), key=lambda x: x[1])
+# for a in sorted_list:
+#     print(a)
