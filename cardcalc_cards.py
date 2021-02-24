@@ -55,22 +55,35 @@ def _handle_play_events(card_events, start_time, end_time):
 
     # Build list from events
     for event in card_events:
-        # If applying the buff, add an item to the list of
-        # cards played
-        if event['type'] == 'applybuff':
-            cards.append(CardPlay(event['timestamp'], None, event['sourceID'], event['targetID'], event['abilityGameID']))
+        # if the event is the cast for a play then add to the list
+        if event['type'] == 'cast':
+            cards.append(CardPlay(cast = event['timestamp'], source = event['sourceID'], target = event['targetID'], castId = event['abilityGameID'], start = None, end = None))
+        # If applying the buff, if applying a buff then try and find a matching card play cast and add the new data to that, otherwise make a new item
+        elif event['type'] == 'applybuff':
+            # TODO: I could potentially check that the buff start is close to the cast event but that shouldn't actually be required
+            card_set = [card 
+                        for card in cards
+                        if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID']and card.start is None]
+            if card_set:
+                card = card_set[0]
+                card.start = event['timestamp']
+            else: 
+                # if there is no associated cast event then use the buff time as the cast time
+                cards.append(CardPlay(cast = event['timestamp'], start = event['timestamp'], end = None, source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
         # If removing the buff, add an end timestamp to the matching application
         elif event['type'] == 'removebuff':
             card_set = [card
                       for card in cards
-                      if card.target == event['targetID'] and card.source == event['sourceID'] and card.id == event['abilityGameID'] and card.end is None]
+                      if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID'] and card.end is None]
             # add it to the discovered tether
             if card_set:
                 card = card_set[0]
                 card.end = event['timestamp']
             # if there is no start event, add one and set it to 15s prior
             else:
-                cards.append(CardPlay(max(event['timestamp'] - 15000, start_time), event['timestamp'], event['sourceID'], event['targetID'], event['abilityGameID']))
+                cards.append(CardPlay(cast = max(event['timestamp'] - 15000, start_time), start = max(event['timestamp'] - 15000, start_time), end = event['timestamp'], source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
+    
+    # this sets end time for cards to 15s after the buff starts or the end of fight if there was no end event found
     for card in cards:
         if card.end is None:
             card.end = min(card.start + 15000, end_time)
@@ -214,11 +227,14 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         }
 
 def _get_active_card(cards, draw):
+    active_cards = []
     for c in cards:
         # check if the card was played during the draw window
-        if c.start > draw.start and c.start < draw.end:
-            return c
-    return None
+        if c.cast > draw.start and c.cast < draw.end:
+            active_cards.append(c)
+        if c.cast > draw.end:
+            break
+    return active_cards
 
 def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info):
     draw_damage = []
@@ -345,8 +361,14 @@ def cardcalc(report, fight_id, token):
     count = 0
     for draw in draws:
         count += 1
+
         # find if there was a card played in this window
-        card = _get_active_card(cards, draw)
+        active_cards = _get_active_card(cards, draw)
+        # for now we toss out other active cards
+        card = active_cards[0] if len(active_cards) > 0 else None
+        
+        for c in active_cards:
+            print(c)
 
         # only handle the play window if there was a card played
         card_play_data = _handle_card_play(card, cards, damage_report, actors, fight_info)

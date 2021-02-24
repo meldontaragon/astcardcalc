@@ -1,6 +1,5 @@
 from datetime import timedelta
 import pandas as pd
-import numpy as np
 
 class CardCalcException(Exception):
     pass
@@ -102,16 +101,28 @@ class ActorList:
         return -1
 
 class CardPlay:
-    def __init__(self, start: int = 0, end: int = 0, source: int = 0, target: int = 0, id: int = 0):
+    def __init__(self, cast: int = 0, start: int = 0, end: int = 0, source: int = 0, target: int = 0, buffId: int = 0, castId: int = 0):        
+        self.cast = cast
         self.start = start
         self.end = end
         self.source = source
         self.target = target
-        self.id = id
 
-        self.name = CardPlay.GetName(id)
-        self.role = CardPlay.GetRole(id)
-        self.bonus = CardPlay.GetBonus(id)
+        if buffId != 0:
+            self.buffId = buffId
+            self.castId = CardPlay.ConvertID(buffId = buffId)
+        elif castId != 0:
+            self.castId = castId
+            self.buffId = CardPlay.ConvertID(castId = castId)
+        else:
+            self.buffId = buffId
+            self.castId = castId
+
+        self.id = self.buffId
+
+        self.name = CardPlay.GetName(self.id)
+        self.role = CardPlay.GetRole(self.id)
+        self.bonus = CardPlay.GetBonus(self.id)
 
     def __str__(self):
         return f'{self.source} played {self.name} on {self.target} at {self.start}'
@@ -121,6 +132,7 @@ class CardPlay:
             'source': self.source,
             'target': self.target,
             'type': 'play',
+            'cast': self.cast,
             'start': self.start,
             'end': self.end,
             'id': self.id,
@@ -132,20 +144,63 @@ class CardPlay:
     def String(self, player_list, start_time):
         return '{} played {} on {} at {}'.format(player_list[self.source]['name'], self.name, player_list[self.target]['name'], str(timedelta(milliseconds=(self.start-start_time)))[2:11])
 
+    @staticmethod
+    def ConvertID(buffId = 0, castId = 0):
+        if buffId == 0 and castId == 0:
+            return 0
+        elif buffId != 0:
+            return {
+                1001876: 7444,
+                1001877: 7445,
+                1001882: 4401,
+                1001883: 4404,
+                1001884: 4402,
+                1001885: 4403,
+                1001886: 4405,
+                1001887: 4406,
+                0: 'None',
+            } [buffId]
+        elif castId != 0:
+            return {
+                7444: 1001876,
+                7445: 1001877,
+                4401: 1001882,
+                4404: 1001883,
+                4402: 1001884,
+                4403: 1001885,
+                4405: 1001886,
+                4406: 1001887,
+                0: 'None',
+            } [castId] 
+        else:
+            return 0
 
     @staticmethod
-    def GetName(id):
-        return {
-            1001876: 'Lord of Crowns',
-            1001877: 'Lady of Crowns',
-            1001882: 'The Balance',
-            1001884: 'The Arrow',
-            1001885: 'The Spear',
-            1001883: 'The Bole',
-            1001886: 'The Ewer',
-            1001887: 'The Spire',
-            0: 'None',
-        } [id]
+    def GetName(buffId, castId = 0):
+        if buffId == 0 or castId != 0:
+            return {
+                7445: 'Lord of Crowns',
+                7444: 'Lady of Crowns',
+                4401: 'The Balance',
+                4402: 'The Arrow',
+                4403: 'The Spear',
+                4404: 'The Bole',
+                4405: 'The Ewer',
+                4406: 'The Spire',
+                0: 'None',
+            } [castId]
+        else:
+            return {
+                1001876: 'Lord of Crowns',
+                1001877: 'Lady of Crowns',
+                1001882: 'The Balance',
+                1001884: 'The Arrow',
+                1001885: 'The Spear',
+                1001883: 'The Bole',
+                1001886: 'The Ewer',
+                1001887: 'The Spire',
+                0: 'None',
+            } [buffId]
 
     @staticmethod
     def GetRole(id):

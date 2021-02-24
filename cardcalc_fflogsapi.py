@@ -176,11 +176,10 @@ def get_card_play_events(fight_info: FightInfo, token):
 query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
     reportData {
         report(code: $code) {
-            cards: events(
+            cardPlayEvents: events(
                 startTime: $startTime, 
                 endTime: $endTime
-                dataType: Buffs,
-                filterExpression: "ability.id in (1001877, 1001883, 1001886, 1001887, 1001876, 1001882, 1001884, 1001885)"
+                filterExpression: "ability.id in (1001877, 1001883, 1001886, 1001887, 1001876, 1001882, 1001884, 1001885, 7445, 7444, 4401, 4402, 4403, 4404, 4405, 4406)"
             ) {
                 data
             }
@@ -190,8 +189,8 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
 """
 
     data = call_fflogs_api(query, variables, token)
-    card_events = data['data']['reportData']['report']['cards']['data']
-    
+    card_events = data['data']['reportData']['report']['cardPlayEvents']['data']
+
     return card_events
 
 def get_card_draw_events(fight_info: FightInfo, token):
