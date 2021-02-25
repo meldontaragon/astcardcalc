@@ -62,17 +62,14 @@ def testing_damage_report(url, token):
 
     damage_report = calc_snapshot_damage(damage_data)
     damage_report = cleanup_hit_data(damage_report)
-    print(damage_report)
+    
+    return damage_report
 
 def run_card_calc(url, token):
     report_id, fight_id = decompose_url(url, token)
     cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
     
-    # for a in cardcalc_data:
-    #     print('\n')
-    #     print(a)
-    #     print('\n')
-
+    return cardcalc_data, actors
 def run_profile(url, token, filename):
     profile.run('run_card_calc(url, token)', filename)
     # profile.run('run_compute_total_damage(url, token)', filename)
@@ -104,12 +101,26 @@ def run_compute_total_damage(url, token):
 # url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
 # url = 'https://www.fflogs.com/reports/AkjHFtzwBMWJQdaY#fight=12&type=damage-done'
 # url = 'https://www.fflogs.com/reports/8jA937KGgXMp4mbn#fight=1&type=damage-done'
-url = 'https://www.fflogs.com/reports/MHGzygdJFZkKh7vm#fight=1'
+# url = 'https://www.fflogs.com/reports/MHGzygdJFZkKh7vm#fight=1'
+url = 'https://www.fflogs.com/reports/jtWfFhBLY1g9xbT8#fight=6&type=damage-done'
 token = get_bearer_token()
 
-# testing_damage_report(url, token)
+damage_report = testing_damage_report(url, token)
 
-run_card_calc(url, token)
+# print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7)])
+
+# print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7) & (damage_report['hitType'] != 'dot'), 'amount'].sum())
+# print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7), 'amount'].sum())
+# print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7), 'amount'].sum()/1.06)
+
+data, actors = run_card_calc(url, token)
+
+# for d in data:
+#     if d['startTime'] == '00:33.554':
+#         for p in d:
+#             print('{}: {}'.format(p, d[p]))
+    # else:
+    #     print(d['startTime'])
 
 # for i in range(0,10):
 #     filename = 'profile_burst_loc_changes_{}.out'.format(i)
