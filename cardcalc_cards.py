@@ -198,6 +198,7 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         else:
             mult = 1 + ((card.bonus-1.0)/2.0)
 
+        
         # Correct damage by removing card bonus from player with card
         if card.target in damages:
             damages[card.target] = int(damages[card.target] / mult)
@@ -353,10 +354,15 @@ def cardcalc(report, fight_id, token):
     cards = _handle_play_events(card_events, fight_info.start, fight_info.end)
     draws = _handle_draw_events(draw_events, fight_info.start, fight_info.end)
     
-    # Get all damage event and then sum tick events into snapshot damage events
+    # Get all damage events
     damage_events = get_damage_events(fight_info, token)
+
+    # Sum dot snapshots
     damage_report = calc_snapshot_damage(damage_events)
-    non_card_damage_report = compute_remove_card_damage(damage_report, cards, actors)
+
+    # compute data without card buffs
+    non_card_damage_report = damage_report.copy(deep=True)
+    compute_remove_card_damage(non_card_damage_report, cards, actors)
 
     if not cards:
         raise CardCalcException("No cards played in fight")
