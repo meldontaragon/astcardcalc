@@ -237,25 +237,31 @@ class SearchWindow:
         self.duration = duration
         self.step = step
 
-class BurstWindow:
-    def __init__(self, start, end):
-        self.start = start
-        self.end = end
-
-class DrawWindow(BurstWindow):
-    def __init__(self, source, start, end, startEvent, endEvent):
+class DrawWindow:
+    def __init__(self, source = 0, start = 0, end = 0, castId = -2, buffId = 0):
         self.source = source
         self.start = start
         self.end = end
-        self.startEvent = startEvent
-        self.endEvent = endEvent
 
+        self.castId = castId
+        self.buffId = buffId
+        
+        self.startEvent = None
+        self.endEvent = None
+        
+        if buffId != 0:
+            self.cardDrawn = DrawWindow.GetCard(buffId)
+        if buffId != 0 and castId == -2:
+            self.startEvent = DrawWindow.GetBuff(buffId)
+        if castId != -2:
+            self.startEvent = DrawWindow.GetName(castId)
+        
     def __str__(self):
         return f'From {self.startEvent} at {self.start} to {self.endEvent} at {self.end}'
 
     def to_dict(self): 
         return {
-            'soruce': self.source,
+            'source': self.source,
             'type': 'draw',
             'start': self.start,
             'end': self.end,
@@ -276,6 +282,29 @@ class DrawWindow(BurstWindow):
             7448: 'Sleeve Draw',
             3593: 'Redraw',
         }[id]
+
+    @staticmethod
+    def GetCard(buffId):
+        return {
+            1000913: 'The Balance',
+            1000914: 'The Bole',
+            1000915: 'The Arrow',
+            1000916: 'The Spear',
+            1000917: 'The Ewer',
+            1000918: 'The Spire'
+        }
+
+    @staticmethod
+    def GetBuff(buffId):
+                return {
+            1000913: 'Balance Drawn',
+            1000914: 'Bole Drawn',
+            1000915: 'Arrow Drawn',
+            1000916: 'Spear Drawn',
+            1000917: 'Ewer Drawn',
+            1000918: 'Spire Drawn'
+        }
+
 
 class FightInfo:
     def __init__(self, report_id, fight_number, start_time, end_time, name, kill):
