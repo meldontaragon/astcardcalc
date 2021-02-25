@@ -83,12 +83,17 @@ def _handle_play_events(card_events, start_time, end_time):
             else:
                 cards.append(CardPlay(cast = max(event['timestamp'] - 15000, start_time), start = max(event['timestamp'] - 15000, start_time), end = event['timestamp'], source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
     
+    # this might be the wrong thing but for now I'm gonna toss cards with cast events but no buff events
+    valid_cards = [card 
+                    for card in cards
+                    if card.start is not None]
+
     # this sets end time for cards to 15s after the buff starts or the end of fight if there was no end event found
-    for card in cards:
+    for card in valid_cards:
         if card.end is None:
             card.end = min(card.start + 15000, end_time)
 
-    return cards
+    return valid_cards
 
 def print_results(results, friends, encounter_info):
     """
@@ -367,9 +372,6 @@ def cardcalc(report, fight_id, token):
         # for now we toss out other active cards
         card = active_cards[0] if len(active_cards) > 0 else None
         
-        for c in active_cards:
-            print(c)
-
         # only handle the play window if there was a card played
         card_play_data = _handle_card_play(card, cards, damage_report, actors, fight_info)
         
