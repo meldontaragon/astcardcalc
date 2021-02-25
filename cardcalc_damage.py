@@ -106,11 +106,11 @@ def compute_remove_card_damage(damage_report,
                 eff_bonus = 1.0 + ((card.bonus - 1.0)/2.0)
 
         # check if there are any valid damage values for the active card holder during it's time window (this should be non-empty but especially for pets may sometimes not be)
-        if damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].empty:
+        if damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] < card.end) & (damage_report['sourceID'] == card.target), 'amount'].empty:
             next
         else:
             # modifiy all values with the correct sourceID that lie between the start event and end event times for the card
-            damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'] = damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].transform(lambda x: int(x/eff_bonus))
+            damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] <= card.end) & (damage_report['sourceID'] == card.target), 'amount'] = damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] <= card.end) & (damage_report['sourceID'] == card.target), 'amount'].transform(lambda x: int(x/eff_bonus))
 
     return damage_report
 
