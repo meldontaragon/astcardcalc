@@ -163,18 +163,18 @@ def compute_total_damage(damage_report,
     hit_details = {}
 
     # create a dataframe with only the current time window
-    current_df = damage_report.loc[lambda df: (df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
+    current_df = damage_report.loc[(damage_report['timestamp'] >= start_time) & (damage_report['timestamp'] <= end_time)]
 
     for actor in current_df['sourceID'].unique():
-        combined_damage[actor] = current_df.loc[lambda df: df['sourceID'] == actor, 'amount'].sum()
+        combined_damage[actor] = current_df.loc[current_df['sourceID'] == actor, 'amount'].sum()
 
     if detailedInfo:
         for actor in current_df['sourceID'].unique():
-            normal = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'normal'), 'amount'].sum()
-            dh = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'dh'), 'amount'].sum()
-            crit = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'crit'), 'amount'].sum()
-            cdh = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'cdh'), 'amount'].sum()
-            dot = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'dot'), 'amount'].sum()
+            normal = current_df.loc[(current_df['sourceID'] == actor) & (current_df['hitType'] == 'normal'), 'amount'].sum()
+            dh = current_df.loc[(current_df['sourceID'] == actor) & (current_df['hitType'] == 'dh'), 'amount'].sum()
+            crit = current_df.loc[(current_df['sourceID'] == actor) & (current_df['hitType'] == 'crit'), 'amount'].sum()
+            cdh = current_df.loc[(current_df['sourceID'] == actor) & (current_df['hitType'] == 'cdh'), 'amount'].sum()
+            dot = current_df.loc[(current_df['sourceID'] == actor) & (current_df['hitType'] == 'dot'), 'amount'].sum()
 
             hit_details[actor] = {
                 'normal': normal,
