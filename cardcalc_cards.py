@@ -20,7 +20,7 @@ from cardcalc_data import Player, Pet, CardPlay, BurstWindow, DrawWindow, FightI
 
 from cardcalc_fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
-from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage
+from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage, cleanup_hit_data
 
 """
 For the initial version of this the following simple rules are use.
@@ -189,8 +189,32 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         }
     else:
         # compute damage done during card play window
-        (_, damages, _) = compute_total_damage(damage_report, card.start, card.end, actors)
+        (_, damages, _, full_hit_details, hit_details) = compute_total_damage(damage_report, card.start, card.end, actors, detailedInfo=True)
         
+        hit_percent = {}
+        # compute percentages
+        # percent_format = '{:5.1f} / {:5.1f} / {:5.1f} / {:5.1f} / {:5.1f}'
+        percent_format = '{:5.1f}'
+        for p in hit_details:
+            if damages[p] != 0:
+                # hit_percent[p] = percent_format.format(100*hit_details[p]['normal'] / damages[p], 100*hit_details[p]['dh'] / damages[p], 100*hit_details[p]['crit'] / damages[p], 100*hit_details[p]['cdh'] / damages[p], 100*hit_details[p]['dot'] / damages[p])
+                hit_percent[p] = {
+                    'normalPercent': round(100*hit_details[p]['normal'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dhPercent': round(100*hit_details[p]['dh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'critPercent': round(100*hit_details[p]['crit'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'cdhPercent': round(100*hit_details[p]['cdh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dotPercent': round(100*hit_details[p]['dot'] / damages[p], 1),
+                }
+            else:
+                hit_percent[p] = {
+                    'normalPercent': 0,
+                    'dhPercent': 0,
+                    'critPercent': 0,
+                    'cdhPercent': 0,
+                    'dotPercent': 0,
+                }
+
+
         # check what multiplier should be used to remove the damage bonus
         mult = 0
         if actors.players[card.target].role == card.role:
@@ -210,11 +234,11 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
 
         for pid, dmg in damages.items():
             mod_dmg = dmg
-            has_card = 'No'
+            has_card = False
 
             for prev_card in active_cards:
                 if prev_card.start < card.start and prev_card.end > card.start and prev_card.target == pid:
-                    has_card = 'Yes'
+                    has_card = True
 
             if card.role != actors.players[pid].role:
                 mod_dmg = int(dmg/2)
@@ -226,7 +250,8 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
                 'adjustedDamage': mod_dmg,
                 'role': actors.players[pid].role,
                 'job': actors.players[pid].job,
-            })
+                # 'hitPercent': hit_percent[pid],
+            } | hit_percent[pid])
 
         # convert to dataframe
         card_damage_table = pd.DataFrame(corrected_damage)
@@ -234,7 +259,7 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         card_damage_table.sort_values(by='adjustedDamage', ascending=False, inplace=True)
 
         # get the highest damage target that isn't LimitBreak
-        optimal_target = card_damage_table[ (card_damage_table['role'] != 'LimitBreak') & (card_damage_table['hasCard'] == 'No')]['adjustedDamage'].idxmax()
+        optimal_target = card_damage_table[ (card_damage_table['role'] != 'LimitBreak') & (card_damage_table['hasCard'] == False) ]['adjustedDamage'].idxmax()
 
         if optimal_target is None:
             optimal_target = 'Nobody?'
@@ -356,6 +381,7 @@ def cardcalc(report, fight_id, token):
     # Get all damage event and then sum tick events into snapshot damage events
     damage_events = get_damage_events(fight_info, token)
     damage_report = calc_snapshot_damage(damage_events)
+    damage_report = cleanup_hit_data(damage_report)
     non_card_damage_report = compute_remove_card_damage(damage_report, cards, actors)
 
     if not cards:

@@ -15,7 +15,7 @@ from cardcalc_data import ActorList, FightInfo, SearchWindow, CardCalcException
 
 from cardcalc_fflogsapi import get_bearer_token, get_actor_lists, get_damage_events, get_fight_info, decompose_url
 
-from cardcalc_damage import search_burst_window, calc_snapshot_damage, calc_tick_damage, compute_time_averaged_dps, compute_total_damage
+from cardcalc_damage import search_burst_window, calc_snapshot_damage, calc_tick_damage, compute_time_averaged_dps, compute_total_damage, cleanup_hit_data
 
 from cardcalc_cards import cardcalc
 
@@ -54,17 +54,24 @@ def test_plotting():
     # pio.write_html(fig, file='index.html', auto_open=True)
 
 def testing_damage_report(url, token):
+    report_id, fight_id = decompose_url(url, token)
     fight_info = get_fight_info(report_id, fight_id, token)
     actor_list = get_actor_lists(fight_info, token)
 
     damage_data = get_damage_events(fight_info, token)
 
-    damage_report = calculate_tick_snapshot_damage(damage_data)
+    damage_report = calc_snapshot_damage(damage_data)
+    damage_report = cleanup_hit_data(damage_report)
+    print(damage_report)
 
 def run_card_calc(url, token):
     report_id, fight_id = decompose_url(url, token)
     cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
-    # print(cardcalc_data)
+    
+    # for a in cardcalc_data:
+    #     print('\n')
+    #     print(a)
+    #     print('\n')
 
 def run_profile(url, token, filename):
     profile.run('run_card_calc(url, token)', filename)
@@ -96,26 +103,31 @@ def run_compute_total_damage(url, token):
 # url = 'https://www.fflogs.com/reports/fZXhDbTjw7GWmKLz#fight=2'
 # url = 'https://www.fflogs.com/reports/p47GRHQBvaZXq1xk#fight=last'
 # url = 'https://www.fflogs.com/reports/AkjHFtzwBMWJQdaY#fight=12&type=damage-done'
-url = 'https://www.fflogs.com/reports/8jA937KGgXMp4mbn#fight=1&type=damage-done'
+# url = 'https://www.fflogs.com/reports/8jA937KGgXMp4mbn#fight=1&type=damage-done'
+url = 'https://www.fflogs.com/reports/MHGzygdJFZkKh7vm#fight=1'
 token = get_bearer_token()
 
-for i in range(0,10):
-    filename = 'profile_burst_loc_changes_{}.out'.format(i)
-    run_profile(url, token, filename)
+# testing_damage_report(url, token)
 
-sort_options = 'time'
-# sort_options = 'cumulative'
+run_card_calc(url, token)
 
-output_options = 'cardcalc_'
-filename = 'profile_burst_loc_changes_{}.out'.format(0)
-stats = pstats.Stats(filename)
-for i in range(1,10):
-    filename = 'profile_burst_loc_changes_{}.out'.format(0)
-    stats.add(filename)
+# for i in range(0,10):
+#     filename = 'profile_burst_loc_changes_{}.out'.format(i)
+#     run_profile(url, token, filename)
 
-stats.strip_dirs()
-stats.sort_stats(sort_options)
-stats.print_stats(output_options, 20)
+# sort_options = 'time'
+# # sort_options = 'cumulative'
+
+# output_options = 'cardcalc_'
+# filename = 'profile_burst_loc_changes_{}.out'.format(0)
+# stats = pstats.Stats(filename)
+# for i in range(1,10):
+#     filename = 'profile_burst_loc_changes_{}.out'.format(0)
+#     stats.add(filename)
+
+# stats.strip_dirs()
+# stats.sort_stats(sort_options)
+# stats.print_stats(output_options, 20)
 
 # read_stats(filename, output_option)
 
