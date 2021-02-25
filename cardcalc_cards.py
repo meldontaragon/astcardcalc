@@ -58,7 +58,7 @@ def _handle_play_events(card_events, start_time, end_time):
         # if the event is the cast for a play then add to the list
         if event['type'] == 'cast':
             cards.append(CardPlay(cast = event['timestamp'], source = event['sourceID'], target = event['targetID'], castId = event['abilityGameID'], start = None, end = None))
-        # If applying the buff, if applying a buff then try and find a matching card play cast and add the new data to that, otherwise make a new item
+        # If applying a buff then try and find a matching card play cast and add the new data to that, otherwise make a new item
         elif event['type'] == 'applybuff':
             # TODO: I could potentially check that the buff start is close to the cast event but that shouldn't actually be required
             card_set = [card 
@@ -75,13 +75,38 @@ def _handle_play_events(card_events, start_time, end_time):
             card_set = [card
                       for card in cards
                       if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID'] and card.end is None]
-            # add it to the discovered tether
+            # add it to the discovered card play
             if card_set:
                 card = card_set[0]
                 card.end = event['timestamp']
             # if there is no start event, add one and set it to 15s prior
             else:
                 cards.append(CardPlay(cast = max(event['timestamp'] - 15000, start_time), start = max(event['timestamp'] - 15000, start_time), end = event['timestamp'], source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
+        # special case for refresh buff which is treated like both apply and remove at the same time
+        elif event['type'] == 'refreshbuff':
+            # first clean up the end event 
+            card_set = [card
+                      for card in cards
+                      if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID'] and card.end is None]
+            # add it to the discovered card play
+            if card_set:
+                card = card_set[0]
+                card.end = event['timestamp']
+            # if there is no start event, add one and set it to 15s prior
+            else:
+                cards.append(CardPlay(cast = max(event['timestamp'] - 15000, start_time), start = max(event['timestamp'] - 15000, start_time), end = event['timestamp'], source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
+
+            # now we can do the same for the buff window following the refresh
+            card_set = [card 
+                        for card in cards
+                        if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID']and card.start is None]
+            if card_set:
+                card = card_set[0]
+                card.start = event['timestamp']
+            else: 
+                # if there is no associated cast event then use the buff time as the cast time
+                cards.append(CardPlay(cast = event['timestamp'], start = event['timestamp'], end = None, source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
+
     
     # this might be the wrong thing but for now I'm gonna toss cards with cast events but no buff events
     valid_cards = [card 
