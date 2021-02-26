@@ -197,7 +197,6 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         percent_format = '{:5.1f}'
         for p in hit_details:
             if damages[p] != 0:
-                # hit_percent[p] = percent_format.format(100*hit_details[p]['normal'] / damages[p], 100*hit_details[p]['dh'] / damages[p], 100*hit_details[p]['crit'] / damages[p], 100*hit_details[p]['cdh'] / damages[p], 100*hit_details[p]['dot'] / damages[p])
                 hit_percent[p] = {
                     'normalPercent': round(100*hit_details[p]['normal'] / (damages[p] - hit_details[p]['dot']), 1),
                     'dhPercent': round(100*hit_details[p]['dh'] / (damages[p] - hit_details[p]['dot']), 1),
@@ -214,19 +213,7 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
                     'dotPercent': 0,
                 }
 
-
-        # check what multiplier should be used to remove the damage bonus
-        mult = 0
-        if actors.players[card.target].role == card.role:
-            mult = card.bonus
-        else:
-            mult = 1 + ((card.bonus-1.0)/2.0)
-
-        # Correct damage by removing card bonus from player with card
-        if card.target in damages:
-            damages[card.target] = int(damages[card.target] / mult)
-
-        # now adjust the damage for incorrect roles 
+        # adjust the damage for incorrect roles 
         corrected_damage = []
         active_cards = [prev_card for prev_card in cards 
                             if prev_card.start < card.start
@@ -378,11 +365,14 @@ def cardcalc(report, fight_id, token):
     cards = _handle_play_events(card_events, fight_info.start, fight_info.end)
     draws = _handle_draw_events(draw_events, fight_info.start, fight_info.end)
     
-    # Get all damage event and then sum tick events into snapshot damage events
+    # Get all damage events
     damage_events = get_damage_events(fight_info, token)
+
+    # Sum dot snapshots
     damage_report = calc_snapshot_damage(damage_events)
-    damage_report = cleanup_hit_data(damage_report)
-    non_card_damage_report = compute_remove_card_damage(damage_report, cards, actors)
+
+    # compute data without card buffs
+    damage_report = compute_remove_card_damage(damage_report, cards, actors)
 
     if not cards:
         raise CardCalcException("No cards played in fight")
@@ -432,7 +422,7 @@ def cardcalc(report, fight_id, token):
         # 15s search window corresponding to possible card plays 
         # during the draw window and then search it 
         search_window = SearchWindow(draw.start, draw.end, 15000, 1000)
-        draw_window_damage_collection = search_burst_window(non_card_damage_report, search_window, actors)
+        draw_window_damage_collection = search_burst_window(damage_report, search_window, actors)
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
 

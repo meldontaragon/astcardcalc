@@ -146,11 +146,11 @@ def compute_remove_card_damage(damage_report,
                 eff_bonus = 1.0 + ((card.bonus - 1.0)/2.0)
 
         # check if there are any valid damage values for the active card holder during it's time window (this should be non-empty but especially for pets may sometimes not be)
-        if damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].empty:
+        if damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] <= card.end) & (damage_report['sourceID'] == card.target), 'amount'].empty:
             next
         else:
-            # modifiy all values with the correct sourceID that lie between the start event and end event times for the card
-            damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'] = damage_report.loc[lambda df: (df['timestamp'] > card.start) & (df['timestamp'] < card.end) & (df['sourceID'] == card.target), 'amount'].transform(lambda x: int(x/eff_bonus))
+            # modify all values with the correct sourceID that lie between the start event and end event times for the card
+            damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] <= card.end) & (damage_report['sourceID'] == card.target), 'amount'] = damage_report.loc[(damage_report['timestamp'] >= card.start) & (damage_report['timestamp'] <= card.end) & (damage_report['sourceID'] == card.target), 'amount'].transform(lambda x: int(x/eff_bonus))
 
     return damage_report
 
@@ -201,6 +201,7 @@ def compute_total_damage(damage_report,
             if p in hit_details and actors.pets[p].owner in player_hit_details:
                 for (hitType, value) in hit_details[p].items():
                     player_hit_details[actors.pets[p].owner][hitType] += value
+        combined_damage[actor] = current_df.loc[damage_report['sourceID'] == actor, 'amount'].sum()
 
     player_damage = {}
     for p in actors.players:
@@ -281,7 +282,7 @@ def compute_time_averaged_dps(damage_report,
     while current_time < end_time:
         time_delta = (max_time - min_time)/1000
 
-        active_events = damage_report.loc[lambda df: (df['timestamp'] <= max_time) & (df['timestamp'] >= min_time)]
+        active_events = damage_report.loc[(damage_report['timestamp'] <= max_time) & (damage_report['timestamp'] >= min_time)]
         step_damage = active_events['amount'].sum()
 
         average_dps.append({
@@ -289,7 +290,7 @@ def compute_time_averaged_dps(damage_report,
             'dps': step_damage/time_delta,
         })
 
-        current_time += stepSize
+        current_time += step_size
         min_time = max(current_time - time_range, start_time)
         max_time = min(current_time + time_range, end_time)
 
