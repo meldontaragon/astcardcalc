@@ -275,57 +275,37 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
 
     sorted_damage_list = sorted(draw_window_damage_collection.df.unstack().to_dict().items(), key=lambda x: x[1], reverse=True)
 
-    # I suspect this is one of the most inefficient pieces of the code
-    # but it might lose out to the burst window search
-    current_item = sorted_damage_list[examined_count]
-    examined_count += 1
-    (target_opt, time_opt, damage_opt) = (current_item[0][0], current_item[0][1], current_item[1])
-    
-    collected_count += 1
-    draw_damage.append({
-        'count': collected_count,
-        'id': target_opt,
-        'damage': damage_opt,
-        'timestamp': time_opt,
-        'time': fight_info.ToString(time=time_opt)[:5],
-    })
-    
-    current_damage = damage_opt
     while collected_count < data_count and examined_count < len(sorted_damage_list):
         # get the next lowest damage instance
         current_item = sorted_damage_list[examined_count]
         examined_count += 1
-        (target_new, time_new, damage_new) = (current_item[0][0], current_item[0][1], current_item[1])
+        (target_opt, time_opt, damage_opt) = (current_item[0][0], current_item[0][1], current_item[1])
 
-        # update the max damage value we've looked up
-        current_damage = damage_new
-
-        # if it's the same player in a window that's already 
-        # recorded skip it
+        # check if the new entry we've selected is in a window of 4s as an entry from that player with higher damage
         ignore_entry = False
         for table_entry in draw_damage:
-            if target_new == table_entry['id'] and abs(time_new - table_entry['timestamp']) < 4000:
+            if target_opt == table_entry['id'] and abs(time_opt - table_entry['timestamp']) < 4000:
                 ignore_entry = True
             
         if ignore_entry:
             continue
 
         # if the max damage is greater than 0 then add an entry:
-        if damage_new > 0:
+        if damage_opt > 0:
             collected_count += 1
             draw_damage.append({
                 'count': collected_count,
-                'id': target_new,
-                'damage': damage_new,
-                'timestamp': time_new,
-                'time': fight_info.ToString(time=time_new)[:5],
+                'id': target_opt,
+                'damage': damage_opt,
+                'timestamp': time_opt,
+                'time': fight_info.ToString(time=time_opt)[:5],
             })
 
     draw_damage_table = pd.DataFrame(draw_damage)
     draw_damage_table.set_index('id', inplace=True, drop=False)
     draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
 
-    return draw_damage_table, time_opt, target_opt, damage_opt
+    return draw_damage_table
 
 def cardcalc(report, fight_id, token):
     """
@@ -405,7 +385,32 @@ def cardcalc(report, fight_id, token):
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
 
-        draw_damage_table, time_opt, target_opt, damage_opt = _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info)
+        draw_damage_table = _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info)
+
+        draw_damage_table['role'] = draw_damage_table['id'].apply(lambda row: actors.players[row].role)
+
+        role_table = draw_damage_table.loc[draw_damage_table['role'] == 'ranged']
+
+        if not role_table.empty:
+            draw_optimal_time_ranged = fight_info.ToString(time=int(role_table['timestamp'].iloc[0]))
+            draw_optimal_target_ranged = actors.players[role_table['id'].iloc[0]].name
+            draw_optimal_damage_ranged = int(role_table['damage'].iloc[0])
+        else:
+            draw_optimal_time_ranged = 'None'
+            draw_optimal_target_ranged = 'None'
+            draw_optimal_damage_ranged = 0
+
+        role_table = draw_damage_table.loc[draw_damage_table['role'] == 'melee']
+
+        if not role_table.empty:
+            draw_optimal_time_melee = fight_info.ToString(time=int(role_table['timestamp'].iloc[0]))
+            draw_optimal_target_melee = actors.players[role_table['id'].iloc[0]].name
+            draw_optimal_damage_melee = int(role_table['damage'].iloc[0])
+        else:
+            draw_optimal_time_melee = 'None'
+            draw_optimal_target_melee = 'None'
+            draw_optimal_damage_melee = 0
+
 
         card_draw_data = {
             'startTime': fight_info.ToString(time=draw.start),
@@ -413,9 +418,12 @@ def cardcalc(report, fight_id, token):
             'startEvent': draw.startEvent,
             'endEvent': draw.endEvent,
             'drawDamageTable': draw_damage_table.to_dict(orient='records'),
-            'drawOptimalTime': fight_info.ToString(time=time_opt),
-            'drawOptimalTarget': actors.players[target_opt].name,
-            'drawOptimalDamage': damage_opt,
+            'drawOptimalTimeRanged': draw_optimal_time_ranged,
+            'drawOptimalTargetRanged': draw_optimal_target_ranged,
+            'drawOptimalDamageRanged': draw_optimal_damage_ranged,
+            'drawOptimalTimeMelee': draw_optimal_time_melee,
+            'drawOptimalTargetMelee': draw_optimal_target_melee,
+            'drawOptimalDamageMelee': draw_optimal_damage_melee,
             'count': count,
         }
 

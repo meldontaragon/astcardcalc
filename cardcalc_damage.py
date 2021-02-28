@@ -186,7 +186,6 @@ def search_burst_window(damage_report,
     damage_df.set_index('timestamp', drop=True, inplace=True)
     return BurstDamageCollection(damage_df, search_window.duration)
 
-
 def compute_time_averaged_dps(damage_report, 
                               start_time: int, 
                               end_time: int, 
