@@ -189,12 +189,12 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         }
     else:
         # compute damage done during card play window
-        (_, damages, _, full_hit_details, hit_details) = compute_total_damage(damage_report, card.start, card.end, actors, detailedInfo=True)
+        (_, damages, _, _, hit_details) = compute_total_damage(damage_report, card.start, card.end, actors, detailedInfo=True)
         
         hit_percent = {}
         # compute percentages
         # percent_format = '{:5.1f} / {:5.1f} / {:5.1f} / {:5.1f} / {:5.1f}'
-        percent_format = '{:5.1f}'
+        # percent_format = '{:5.1f}'
         for p in hit_details:
             if damages[p] != 0:
                 hit_percent[p] = {
@@ -212,6 +212,8 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
                     'cdhPercent': 0,
                     'dotPercent': 0,
                 }
+                # raise CardCalcException
+
 
         # adjust the damage for incorrect roles 
         corrected_damage = []
@@ -222,10 +224,14 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         for pid, dmg in damages.items():
             mod_dmg = dmg
             has_card = False
+            has_card_remaining = 0
 
             for prev_card in active_cards:
                 if prev_card.start < card.start and prev_card.end > card.start and prev_card.target == pid:
                     has_card = True
+                    # this doesn't check for early cutoffs that would occur from
+                    # playing another card on someone before the first one ends
+                    has_card_remaining = prev_card.end - card.start
 
             if card.role != actors.players[pid].role:
                 mod_dmg = int(dmg/2)
@@ -233,11 +239,11 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
             corrected_damage.append({
                 'id': pid,
                 'hasCard': has_card,
+                'remaining': round(timedelta(milliseconds=has_card_remaining).total_seconds(),1),
                 'realDamage': dmg,
                 'adjustedDamage': mod_dmg,
                 'role': actors.players[pid].role,
                 'job': actors.players[pid].job,
-                # 'hitPercent': hit_percent[pid],
             } | hit_percent[pid])
 
         # convert to dataframe
@@ -370,6 +376,9 @@ def cardcalc(report, fight_id, token):
 
     # Sum dot snapshots
     damage_report = calc_snapshot_damage(damage_events)
+
+    # clean up hit types
+    damage_report = cleanup_hit_data(damage_report)
 
     # compute data without card buffs
     damage_report = compute_remove_card_damage(damage_report, cards, actors)

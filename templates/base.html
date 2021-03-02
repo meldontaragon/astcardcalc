@@ -66,6 +66,19 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* this defines the detailed info switch content */
+        .detailedSwitch span:last-child::before,
+        .detailedSwitch span:last-child::after {
+            content: "";
+            position: absolute;
+        }
+
+        .detailedSection {
+            position: absolute;
+            top: -999em;
+            left: -999em;
+        }
+
         /* the following is for the tabs */
         .tabset {
             margin-top: 15px;
