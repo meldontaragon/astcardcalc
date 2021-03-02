@@ -105,7 +105,7 @@ def run_compute_total_damage(url, token):
 url = 'https://www.fflogs.com/reports/jtWfFhBLY1g9xbT8#fight=6&type=damage-done'
 token = get_bearer_token()
 
-damage_report = testing_damage_report(url, token)
+# damage_report = testing_damage_report(url, token)
 
 # print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7)])
 
@@ -113,7 +113,7 @@ damage_report = testing_damage_report(url, token)
 # print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7), 'amount'].sum())
 # print(damage_report.loc[(damage_report['timestamp']>= 3354304) & (damage_report['timestamp'] <= 3368464) & (damage_report['sourceID'] == 7), 'amount'].sum()/1.06)
 
-data, actors = run_card_calc(url, token)
+# data, actors = run_card_calc(url, token)
 
 # for d in data:
 #     if d['startTime'] == '00:33.554':
@@ -122,27 +122,28 @@ data, actors = run_card_calc(url, token)
     # else:
     #     print(d['startTime'])
 
-# for i in range(0,10):
-#     filename = 'profile_burst_loc_changes_{}.out'.format(i)
-#     run_profile(url, token, filename)
+for i in range(0,10):
+    print('Running #{}'.format(i))
+    filename = 'profile_role_tab_changes_{}.out'.format(i)
+    run_profile(url, token, filename)
 
-# sort_options = 'time'
-# # sort_options = 'cumulative'
+sort_options = 'time'
+# sort_options = 'cumulative'
 
-# output_options = 'cardcalc_'
-# filename = 'profile_burst_loc_changes_{}.out'.format(0)
-# stats = pstats.Stats(filename)
-# for i in range(1,10):
-#     filename = 'profile_burst_loc_changes_{}.out'.format(0)
-#     stats.add(filename)
+output_options = 'cardcalc_'
+filename = 'profile_role_tab_changes_{}.out'.format(0)
+stats = pstats.Stats(filename)
+for i in range(1,10):
+    filename = 'profile_role_tab_changes_{}.out'.format(0)
+    stats.add(filename)
 
-# stats.strip_dirs()
-# stats.sort_stats(sort_options)
-# stats.print_stats(output_options, 20)
+stats.strip_dirs()
+stats.sort_stats(sort_options)
+stats.print_stats(output_options, 20)
 
-# read_stats(filename, output_option)
+read_stats(filename, output_option)
 
-# read_stats('profile_burst_window_search.out', output_option)
+read_stats('profile_burst_window_search.out', output_option)
 # read_stats('profile_total_burst_damage_output.txt', output_option)
 
 def generate_sample_df():

@@ -190,7 +190,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for damage in result['drawDamageTable'] %}
+                                    {% for damage in result['drawDamageTableMelee'] %}
                                     {% if actors[damage['id']]['role'] == 'melee' %}
                                     <tr>
                                         <td>{{ damage['time'] }}</td>
@@ -238,7 +238,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {% for damage in result['drawDamageTable'] %}
+                                    {% for damage in result['drawDamageTableRanged'] %}
                                     {% if actors[damage['id']]['role'] == 'ranged' %}
                                     <tr>
                                         <td>{{ damage['time'] }}</td>

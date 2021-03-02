@@ -225,7 +225,8 @@ def compute_total_damage(damage_report,
 
     if detailedInfo:
         return (combined_damage, player_damage, pet_damage, hit_details, player_hit_details)
-    return (combined_damage, player_damage, pet_damage)
+    else:
+        return (combined_damage, player_damage, pet_damage)
 
 """
 This searches a window of time for the optimal card play
@@ -251,7 +252,7 @@ def search_burst_window(damage_report,
     damage_collection = []
 
     while interval_start < search_window.end:
-        (_, total_damage, _) = compute_total_damage(damage_report, interval_start, interval_end, actors)
+        (_, total_damage, _) = compute_total_damage(damage_report, interval_start, interval_end, actors, detailedInfo=False)
         
         # add all values to the collection at this timestamp
         current_damage = total_damage
