@@ -26,14 +26,21 @@
         >
         <input 
             type="radio" 
-            id="tab-carddraw-{{ result['count'] }}" 
+            id="tab-carddraw-melee-{{ result['count'] }}" 
+            name="tab-cards-{{ result['count'] }}"
+            aria-hidden="true"
+        >
+        <input 
+            type="radio" 
+            id="tab-carddraw-ranged-{{ result['count'] }}" 
             name="tab-cards-{{ result['count'] }}"
             aria-hidden="true"
         >
         <ul aria-hidden="true">
             <li><label for="tab-cardplay-{{ result['count'] }}">Card Play</label></li>
             <li><label for="tab-details-{{ result['count'] }}">Detailed Play Info</label></li>
-            <li><label for="tab-carddraw-{{ result['count'] }}">Card Draw</label></li>
+            <li><label for="tab-carddraw-melee-{{ result['count'] }}">Card Draw - Melee</label></li>
+            <li><label for="tab-carddraw-ranged-{{ result['count'] }}">Card Draw - Ranged</label></li>
         </ul>
         <div>
             <section>
@@ -154,7 +161,7 @@
             </section>
 
             <section>
-                <h2>Card Draw</h2>
+                <h2>Card Draw - Melee</h2>
                 <div class="content">
                     <div class="row result-row mb-2 p-2">
                         <div class="col">
@@ -169,8 +176,8 @@
                                 <span class="badge badge-secondary">{{ result['endTime'] }}</span>
                             </p>
                             <p>
-                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTarget'] }}</span>
-                                at <span class="badge badge-secondary">{{ result['drawOptimalTime'] }}</span>.
+                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetMelee'] }}</span>
+                                at <span class="badge badge-secondary">{{ result['drawOptimalTimeMelee'] }}</span>.
                             </p>
                 
                             <table class="table table-striped">
@@ -184,12 +191,62 @@
                                 </thead>
                                 <tbody>
                                     {% for damage in result['drawDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] == 'melee' %}
                                     <tr>
                                         <td>{{ damage['time'] }}</td>
                                         <td>{{ actors[damage['id']]['name'] }}</td>
                                         <td>{{ actors[damage['id']]['job'] }}</td>
                                         <td>{{ damage['damage'] }}</td>
                                     </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <hr>
+                    </div>
+
+                </div>
+            </section>
+            <section>
+                <h2>Card Draw - Ranged</h2>
+                <div class="content">
+                    <div class="row result-row mb-2 p-2">
+                        <div class="col">
+                            <p>
+                                From 
+                                <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                at 
+                                <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
+                                until 
+                                <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                at
+                                <span class="badge badge-secondary">{{ result['endTime'] }}</span>
+                            </p>
+                            <p>
+                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetRanged'] }}</span>
+                                at <span class="badge badge-secondary">{{ result['drawOptimalTimeRanged'] }}</span>.
+                            </p>
+                
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Play Time</th>
+                                        <th scope="col">Player</th>
+                                        <th scope="col">Job</th>
+                                        <th scope="col">Damage</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['drawDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] == 'ranged' %}
+                                    <tr>
+                                        <td>{{ damage['time'] }}</td>
+                                        <td>{{ actors[damage['id']]['name'] }}</td>
+                                        <td>{{ actors[damage['id']]['job'] }}</td>
+                                        <td>{{ damage['damage'] }}</td>
+                                    </tr>
+                                    {% endif %}
                                     {% endfor %}
                                 </tbody>
                             </table>
