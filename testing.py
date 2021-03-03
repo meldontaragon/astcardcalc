@@ -126,15 +126,24 @@ for i in range(0,10):
     print('Running #{}'.format(i))
     filename = 'profile_role_tab_changes_{}.out'.format(i)
     run_profile(url, token, filename)
+file_base = 'profile_base_rerun_{}.out'
+# file_base = 'profile_lambda_compute_{}.out'
+
+# for i in range(0,5):
+    # print('Running #{}'.format(i))
+    # filename = file_base.format(i)
+    # run_profile(url, token, filename)
 
 sort_options = 'time'
 # sort_options = 'cumulative'
 
 output_options = 'cardcalc_'
 filename = 'profile_role_tab_changes_{}.out'.format(0)
+
+filename = file_base.format(0)
 stats = pstats.Stats(filename)
 for i in range(1,10):
-    filename = 'profile_role_tab_changes_{}.out'.format(0)
+    filename = file_base.format(i)
     stats.add(filename)
 
 stats.strip_dirs()
@@ -142,8 +151,6 @@ stats.sort_stats(sort_options)
 stats.print_stats(output_options, 20)
 
 read_stats(filename, output_option)
-
-read_stats('profile_burst_window_search.out', output_option)
 # read_stats('profile_total_burst_damage_output.txt', output_option)
 
 def generate_sample_df():
