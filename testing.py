@@ -99,18 +99,22 @@ def run_compute_total_damage(url, token):
 url = 'https://www.fflogs.com/reports/8jA937KGgXMp4mbn#fight=1&type=damage-done'
 token = get_bearer_token()
 
-for i in range(0,10):
-    filename = 'profile_burst_loc_changes_{}.out'.format(i)
-    run_profile(url, token, filename)
+file_base = 'profile_base_rerun_{}.out'
+# file_base = 'profile_lambda_compute_{}.out'
+
+# for i in range(0,5):
+    # print('Running #{}'.format(i))
+    # filename = file_base.format(i)
+    # run_profile(url, token, filename)
 
 sort_options = 'time'
 # sort_options = 'cumulative'
 
 output_options = 'cardcalc_'
-filename = 'profile_burst_loc_changes_{}.out'.format(0)
+filename = file_base.format(0)
 stats = pstats.Stats(filename)
-for i in range(1,10):
-    filename = 'profile_burst_loc_changes_{}.out'.format(0)
+for i in range(1,5):
+    filename = file_base.format(i)
     stats.add(filename)
 
 stats.strip_dirs()
