@@ -301,16 +301,16 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
 
     sorted_damage_list = pd.DataFrame((draw_window_damage_collection.df.unstack().to_dict().items()), columns=['combined', 'damage'])
     
-    sorted_damage_list['id'] = sorted_damage_list.apply(lambda row: row['combined'][0], axis=1)
-    sorted_damage_list['timestamp'] = sorted_damage_list.apply(lambda row: row['combined'][1], axis=1)
+    sorted_damage_list['id'] = sorted_damage_list['combined'].apply(lambda row: row[0])
+    sorted_damage_list['timestamp'] = sorted_damage_list['combined'].apply(lambda row: row[1])
     sorted_damage_list.drop(columns=['combined'], inplace=True)
     sorted_damage_list.sort_values(by='damage', inplace=True, ascending=False)
 
     # separate out the ranged and melee instances
     sorted_damage_list['role'] = sorted_damage_list['id'].apply(lambda row: actors.players[row].role)
 
-    melee_damage_list = sorted_damage_list.loc[(sorted_damage_list['role'] == 'melee')]
-    ranged_damage_list = sorted_damage_list.loc[(sorted_damage_list['role'] == 'ranged')]
+    melee_damage_list = sorted_damage_list.loc[lambda df: (df['role'] == 'melee')]
+    ranged_damage_list = sorted_damage_list.loc[lambda df:(df['role'] == 'ranged')]
 
     collected_count = 0
     examined_count = 0
