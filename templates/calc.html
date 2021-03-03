@@ -80,7 +80,7 @@
                                         <td>{{ actors[damage['id']]['job'] }}</td>
                                         <td>{{ damage['adjustedDamage'] }}</td>
                                         <td>{{ damage['realDamage'] }}</td>
-                                        <td>{% if damage['hasCard'] %}✓{% endif %}</td>
+                                        <td>{% if damage['hasCard'] %}✔{% endif %}</td>
                                 {% endif %}
                                 {% endfor %}
                             </tbody>
@@ -119,9 +119,9 @@
                                 <tr>
                                     <th scope="col">Player</th>
                                     <th scope="col">Job</th>
-                                    <th scope="col">Adjusted Damage</th>
-                                    <th scope="col">Raw Damage</th>
-                                    <th scope="col">Has Card?</th>
+                                    <th scope="col">Adj. Dmg</th>
+                                    <th scope="col">Raw Dmg</th>
+                                    <th scope="col">Rem. Dur.</th>
                                     <th scope="col">Normal</th>
                                     <th scope="col">DH</th>
                                     <th scope="col">Crit</th>
