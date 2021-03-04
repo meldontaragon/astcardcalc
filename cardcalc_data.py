@@ -292,7 +292,7 @@ class DrawWindow:
             1000916: 'The Spear',
             1000917: 'The Ewer',
             1000918: 'The Spire'
-        }
+        }[buffId]
 
     @staticmethod
     def GetBuff(buffId):
@@ -303,7 +303,7 @@ class DrawWindow:
             1000916: 'Spear Drawn',
             1000917: 'Ewer Drawn',
             1000918: 'Spire Drawn'
-        }
+        }[buffId]
 
 
 class FightInfo:
