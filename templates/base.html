@@ -2,15 +2,29 @@
 <html>
 <head>
     <title>Astrologian Card Calculator</title>
+    <!-- jquery library -->
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+
+    <!-- popper.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+
+    <!-- bootstrap library -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/4.0.0/superhero/bootstrap.min.css" crossorigin="anonymous">
+
+    <!-- favicon -->
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <!-- bootswatch styling-->
     <link rel="stylesheet" href="https://bootswatch.com/4/minty/bootstrap.min.css" crossorigin="anonymous">
 
+    <!-- xivtooltips -->
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mada:wght@400;500&family=Pathway+Gothic+One&display=swap" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/vue-xivtooltips/dist/vue-xivtooltips.min.css" />
+    
     <style>
         html {
             position: relative;
@@ -161,6 +175,7 @@
     </style>
 </head>
 <body>
+<div id="content">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <a class="navbar-brand" href="/">AstCardCalc</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
@@ -194,5 +209,23 @@
           $('[data-toggle="tooltip"]').tooltip()
         })
     </script>
+
+    <!-- xivtooltips -->
+    <script src="https://unpkg.com/vue@2.6.11/dist/vue.js"></script>
+    <script src="https://unpkg.com/vuex@3.0.1/dist/vuex.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-xivtooltips/dist/vue-xivtooltips.umd.min.js"></script>
+
+    <script defer>
+        Vue.use(Vuex)
+        Vue.use(VueXIVTooltips, {
+            webTemplateOnly: true,
+            cacheTimeout: 12000,
+        })
+        let vm = new Vue({
+            el: '#content',
+        })
+    </script>
+</div>
 </body>
 </html>

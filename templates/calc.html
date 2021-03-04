@@ -5,7 +5,7 @@
         <div class="card mb-4 p-2">
             <h5 class="card-title {% if report.enc_kill %}text-success{% else %}text-danger{% endif %}">{{ report.enc_name }}</h5>
             <h6 class="card-subtitle mb-2">{{ report.enc_time }}</h6>
-            <a class="card-link" href="https://www.fflogs.com/reports/{{ report.report_id}}#fight={{ report.fight_id }}">Original log</a>             
+            <a class="card-link" href="https://www.fflogs.com/reports/{{ report.report_id}}#fight={{ report.fight_id }}">Original log</a>
         </div>
     </div>
     
@@ -52,7 +52,7 @@
                         <p>
                             <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
                             played
-                            <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
+                            <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
                             on
                             <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
                             at
@@ -114,7 +114,7 @@
                         <p>
                             <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
                             played 
-                            <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
+                            <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
                             on
                             <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
                             at
@@ -190,12 +190,20 @@
                     <div class="row result-row mb-2 p-2">
                         <div class="col">
                             <p>
-                                From 
+                                From
+                                {% if result['startId'] > 0 %}
+                                <span><ActionFetch name="{{ result['startEvent'] }}" :id="{{ result['startId'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                {% endif %}
                                 at 
                                 <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
-                                until 
+                                until
+                                {% if result['endId'] > 0 %}
+                                <span><ActionFetch name="{{ result['endEvent'] }}" :id="{{ result['endId'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                {% endif %}
                                 at
                                 <span class="badge badge-secondary">{{ result['endTime'] }}</span>
                             </p>
@@ -239,11 +247,19 @@
                         <div class="col">
                             <p>
                                 From 
+                                {% if result['startId'] > 0 %}
+                                <span><ActionFetch name="{{ result['startEvent'] }}"  :id="{{ result['startId'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                {% endif %}
                                 at 
                                 <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
-                                until 
+                                until
+                                {% if result['endId'] > 0 %}
+                                <span><ActionFetch :id="{{ result['endId'] }}" name="{{ result['endEvent'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                {% endif %}
                                 at
                                 <span class="badge badge-secondary">{{ result['endTime'] }}</span>
                             </p>
@@ -283,5 +299,4 @@
         </div>
     </div>
     {% endfor %}
-
 {% endblock %}

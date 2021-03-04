@@ -245,16 +245,26 @@ class DrawWindow:
 
         self.castId = castId
         self.buffId = buffId
-        
+
         self.startEvent = None
         self.endEvent = None
         
-        if buffId != 0:
-            self.cardDrawn = DrawWindow.GetCard(buffId)
-        if buffId != 0 and castId == -2:
-            self.startEvent = DrawWindow.GetBuff(buffId)
-        if castId != -2:
-            self.startEvent = DrawWindow.GetName(castId)
+        if self.buffId != 0:
+            self.cardDrawn = DrawWindow.GetCard(self.buffId)
+        if self.buffId != 0 and self.castId == -2:
+            # print("BuffID set but no CastID set at {}".format(self.start))
+            self.startEvent = DrawWindow.GetBuff(self.buffId)
+        if self.castId != -2:
+            self.startEvent = DrawWindow.GetName(self.castId)
+
+        if self.castId != -2:
+            self.startId = self.castId
+        elif buffId != 0:
+            self.startId = DrawWindow.ConvertID(self.buffId)
+        else:
+            self.startId = -1
+        
+        self.endId = None
         
     def __str__(self):
         return f'From {self.startEvent} at {self.start} to {self.endEvent} at {self.end}'
@@ -295,6 +305,17 @@ class DrawWindow:
         }[buffId]
 
     @staticmethod
+    def ConvertID(buffId):
+        return {
+            1000913: 4401,
+            1000914: 4404,
+            1000915: 4402,
+            1000916: 4403,
+            1000917: 4405,
+            1000918: 4406,
+        }[buffId]
+
+    @staticmethod
     def GetBuff(buffId):
                 return {
             1000913: 'Balance Drawn',
@@ -304,7 +325,6 @@ class DrawWindow:
             1000917: 'Ewer Drawn',
             1000918: 'Spire Drawn'
         }[buffId]
-
 
 class FightInfo:
     def __init__(self, report_id, fight_number, start_time, end_time, name, kill):
