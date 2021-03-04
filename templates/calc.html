@@ -51,7 +51,7 @@
                     <div class="col">
                         <p>
                             <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
-                            played 
+                            played
                             <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
                             on
                             <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
@@ -65,14 +65,19 @@
                                 <div>
                                     <tr>
                                         <th scope="col">
-                                            <span data-toggle="tooltip" data-placement="bottom" title="Tooltip that will be displayed below the player">Player</span>
+                                            Player
                                         </th>
                                         <th scope="col">
-                                            <span data-toggle="tooltip" data-placement="bottom" title="An other tooltip">Job</span>
+                                            Job
                                         </th>
-                                        <th scope="col">Adjusted Damage</th>
-                                        <th scope="col">Raw Damage</th>
-                                        <th scope="col">Has Card?</th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adjusted Damage</span></th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Damage</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Did the player have a card already when this window started?">Has Card?</span>
+                                        </th>
                                     </tr>
                                 </div>
                             </thead>
@@ -123,14 +128,29 @@
                                 <tr>
                                     <th scope="col">Player</th>
                                     <th scope="col">Job</th>
-                                    <th scope="col">Adj. Dmg</th>
-                                    <th scope="col">Raw Dmg</th>
-                                    <th scope="col">Rem. Dur.</th>
-                                    <th scope="col">Normal</th>
-                                    <th scope="col">DH</th>
-                                    <th scope="col">Crit</th>
-                                    <th scope="col">CDH</th>
-                                    <th scope="col">DoT</th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adj Dmg</span></th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Dmg</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Remaining duration on cards active when this window started">Rem Dur</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was not a critical or direct hit">Normal</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a direct hit">DH</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical hit">CH</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical direct hit">CDH</span>
+                                    </th>
+                                    <th scope="col">
+                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of total damage which was from damage over time (DoT) events">DoT</span>
+                                    </th>
                                 </tr>
                                 </div>
                             </thead>
