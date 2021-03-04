@@ -16,7 +16,7 @@ from datetime import timedelta
 import os
 import pandas as pd
 
-from cardcalc_data import Player, Pet, CardPlay, BurstWindow, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
+from cardcalc_data import Player, Pet, CardPlay, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
 
 from cardcalc_fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
@@ -32,21 +32,75 @@ Redraws and plays are ignored
 """
 def _handle_draw_events(card_events, start_time, end_time):
 
-    last_time = start_time
-    last_event = DrawWindow.GetName(0)
-    current_source = 0
+    active_window = DrawWindow(start = start_time, castId = 0)
     draw_windows = []
+
+    # each event is handled by checking if it's a buff or a cast, searching to check if the same timestamp is already in the list or the active window
+    # if so then update that and continue
+    # otherwise 
 
     for event in card_events:
         # check if cast and if it's draw/sleeve/div
         if event['type'] == 'cast' and event['abilityGameID'] in [3590, 16552, 7448]:
-            current_source = event['sourceID']
-            draw_windows.append(DrawWindow(current_source, last_time, event['timestamp'], last_event, DrawWindow.GetName(event['abilityGameID'])))
+            # if event is attached to active window then just update that information
+            if active_window.start == event['timestamp']:
+                active_window.castId = event['abilityGameID']
+                active_window.startEvent = DrawWindow.GetName(active_window.castId)
+            else:
+                # search for previously closed windows without a proper endEvent
+                end_set = [ draw
+                            for draw in draw_windows
+                            if draw.source == event['sourceID'] and draw.end == event['timestamp']]
+                if end_set:
+                    draw_end = end_set[0]
+                    draw_end.endEvent = DrawWindow.GetName(event['abilityGameID'])
+                # search for previously handled buff windows without a cast
+                draw_set = [ draw
+                            for draw in draw_windows
+                            if draw.source == event['sourceID'] and draw.start == event['timestamp'] and draw.castId == 0]
+                # if one is found then update it
+                if draw_set:
+                    draw = draw_set[0]
+                    draw.castId = event['abilityGameID']
+                    draw.startEvent = DrawWindow.GetName(draw.castId)
+                # otherwise close out the old active window and make a new one
+                else:
+                    active_window.end = event['timestamp']
+                    active_window.endEvent = DrawWindow.GetName(event['abilityGameID'])
+                    draw_windows.append(active_window)
 
-            last_time = event['timestamp']
-            last_event = DrawWindow.GetName(event['abilityGameID'])
+                    active_window = DrawWindow(start = event['timestamp'], source = event['sourceID'], castId = event['abilityGameID'])
+        # if buff then perform similar checks
+        elif event['type'] == 'applybuff' and event['abilityGameID'] in [1000913, 1000914, 1000915, 1000916, 1000917, 1000918]:
+            # if event is attached to active window then just update that information
+            if active_window.start == event['timestamp']:
+                active_window.buffId = event['abilityGameID']
+                active_window.cardDrawn = DrawWindow.GetCard(active_window.buffId)
+            else:
+                # search for previously handled buff windows without a cast
+                draw_set = [draw
+                            for draw in draw_windows
+                            if draw.source == event['sourceID'] and draw.start == event['timestamp'] and draw.buffId == 0]
+                # if one is found then update it
+                if draw_set:
+                    draw = draw_set[0]
+                    draw.buffId = event['abilityGameID']
+                    draw.cardDrawn = DrawWindow.GetCard(draw.buffId)
+                # otherwise close out the old active window and make a new one
+                else:
+                    active_window.end = event['timestamp']
+                    active_window.endEvent = DrawWindow.GetBuff(event['abilityGameID'])
+                    draw_windows.append(active_window)
+
+                    active_window = DrawWindow(start = event['timestamp'], source = event['sourceID'], buffId = event['abilityGameID'])
     
-    draw_windows.append(DrawWindow(current_source, last_time, end_time, last_event, DrawWindow.GetName(-1)))
+    active_window.end = end_time
+    active_window.endEvent = DrawWindow.GetName(-1)
+    draw_windows.append(active_window)
+
+    for draw in draw_windows:
+        if draw.endEvent is None:
+            draw.endEvent = 'Unknown'
 
     return draw_windows
 
@@ -278,7 +332,7 @@ def _get_active_card(cards, draw):
     active_cards = []
     for c in cards:
         # check if the card was played during the draw window
-        if c.cast > draw.start and c.cast < draw.end:
+        if c.cast > draw.start and c.cast <= draw.end:
             active_cards.append(c)
         if c.cast > draw.end:
             break
