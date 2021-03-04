@@ -315,7 +315,7 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
     collected_count = 0
     examined_count = 0
 
-    while collected_count < data_count and examined_count < melee_damage_list.size:
+    while collected_count < data_count and examined_count < melee_damage_list['id'].size:
         # get the next lowest damage instance
         # current_item = melee_damage_list.iloc[examined_count]
         
@@ -349,9 +349,8 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
     collected_count = 0
     examined_count = 0
 
-    while collected_count < data_count and examined_count < ranged_damage_list.size:
+    while collected_count < data_count and examined_count < ranged_damage_list['id'].size:
         # get the next lowest damage instance
-        # current_item = ranged_damage_list[examined_count]
         target_opt = ranged_damage_list['id'].iloc[examined_count]
         time_opt = ranged_damage_list['timestamp'].iloc[examined_count]
         damage_opt = ranged_damage_list['damage'].iloc[examined_count]
@@ -380,12 +379,16 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
             })
 
     melee_draw_damage_table = pd.DataFrame(melee_draw_damage)
-    melee_draw_damage_table.set_index('id', inplace=True, drop=False)
-    melee_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
+
+    if not melee_draw_damage_table.empty:
+        melee_draw_damage_table.set_index('id', inplace=True, drop=False)
+        melee_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
 
     ranged_draw_damage_table = pd.DataFrame(ranged_draw_damage)
-    ranged_draw_damage_table.set_index('id', inplace=True, drop=False)
-    ranged_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
+    
+    if not ranged_draw_damage_table.empty:
+        ranged_draw_damage_table.set_index('id', inplace=True, drop=False)
+        ranged_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
 
 
     return (melee_draw_damage_table, ranged_draw_damage_table)

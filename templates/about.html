@@ -42,6 +42,7 @@
         <ul>
             <li>The damage for each player is summed up as if a card was played at this time lasting for 15s</li>
             <li>The starting time is incremented in 1s time steps while checking that it is still before the time of final event for the window</li>
+            <li>The ranged and melee results are checked separately and reported in different tabs.</li>
             <li>A number of maximal damage values are selected from this collection based on the size of the window</li>
             <table style="width:40%">
                 <tr>
@@ -50,19 +51,19 @@
                 </tr>
                 <tr>
                     <td>0s - 4s</td>
-                    <td>3</td>
+                    <td>2</td>
                 </tr>
                 <tr>
                     <td>4s - 10s</td>
-                    <td>5</td>
+                    <td>4</td>
                 </tr>
                 <tr>
                     <td>10s - 20s</td>
-                    <td>8</td>
+                    <td>6</td>
                 </tr>
                 <tr>
                     <td>20s+</td>
-                    <td>10</td>
+                    <td>8</td>
                 </tr>
             </table>
             <li>The same character will not be listed again within 4s of a previously listed damage window with higher total damage</li>
