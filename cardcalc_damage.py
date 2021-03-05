@@ -118,9 +118,9 @@ def hit_type(row):
         return 'dot'
     elif row['hitData'] == 1 and row['multistrike'] == False:
         return 'normal'
-    elif row['hitData'] == 2 and row['multistrike'] == False:
-        return 'dh'
     elif row['hitData'] == 1 and row['multistrike'] == True:
+        return 'dh'
+    elif row['hitData'] == 2 and row['multistrike'] == False:
         return 'crit'
     elif row['hitData'] == 2 and row['multistrike'] == True:
         return 'cdh'
