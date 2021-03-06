@@ -59,41 +59,42 @@
                             <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
                         <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
-            
-                        <table class="table table-striped">
-                            <thead>
-                                <div>
-                                    <tr>
-                                        <th scope="col">
-                                            Player
-                                        </th>
-                                        <th scope="col">
-                                            Job
-                                        </th>
-                                        <th scope="col">
-                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adjusted Damage</span></th>
-                                        <th scope="col">
-                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Damage</span>
-                                        </th>
-                                        <th scope="col">
-                                            <span data-toggle="tooltip" data-placement="bottom" title="Did the player have a card already when this window started?">Has Card?</span>
-                                        </th>
-                                    </tr>
-                                </div>
-                            </thead>
-                            <tbody>
-                                {% for damage in result['cardDamageTable'] %}
-                                {% if actors[damage['id']]['role'] != 'LimitBreak' %}
-                                    <tr>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['adjustedDamage'] }}</td>
-                                        <td>{{ damage['realDamage'] }}</td>
-                                        <td>{% if damage['hasCard'] %}✔{% endif %}</td>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="table-responsive-md">
+                            <table class="table table-striped">
+                                <thead>
+                                    <div>
+                                        <tr>
+                                            <th scope="col">
+                                                Player
+                                            </th>
+                                            <th scope="col">
+                                                Job
+                                            </th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adjusted Damage</span></th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Damage</span>
+                                            </th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Did the player have a card already when this window started?">Has Card?</span>
+                                            </th>
+                                        </tr>
+                                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['cardDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                        <tr>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['adjustedDamage'] }}</td>
+                                            <td>{{ damage['realDamage'] }}</td>
+                                            <td>{% if damage['hasCard'] %}✔{% endif %}</td>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <hr>
                     </div>
@@ -121,58 +122,59 @@
                             <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
                         <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
-            
-                        <table class="table table-striped">
-                            <thead>
-                                <div>
-                                <tr>
-                                    <th scope="col">Player</th>
-                                    <th scope="col">Job</th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adj Dmg</span></th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Dmg</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Remaining duration on cards active when this window started">Rem Dur</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was not a critical or direct hit">Normal</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a direct hit">DH</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical hit">CH</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical direct hit">CDH</span>
-                                    </th>
-                                    <th scope="col">
-                                        <span data-toggle="tooltip" data-placement="bottom" title="Percentage of total damage which was from damage over time (DoT) events">DoT</span>
-                                    </th>
-                                </tr>
-                                </div>
-                            </thead>
-                            <tbody>
-                                {% for damage in result['cardDamageTable'] %}
-                                {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                        <div class="table-responsive-md">
+                            <table class="table table-striped">
+                                <thead>
+                                    <div>
                                     <tr>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['adjustedDamage'] }}</td>
-                                        <td>{{ damage['realDamage'] }}</td>
-                                        <td>{% if damage['hasCard'] %}{{ damage['remaining'] }}s{% endif %}</td>
-                                        <td>{{ damage['normalPercent'] }}</td>
-                                        <td>{{ damage['dhPercent'] }}</td>
-                                        <td>{{ damage['critPercent'] }}</td>
-                                        <td>{{ damage['cdhPercent'] }}</td>
-                                        <td>{{ damage['dotPercent'] }}</td>
+                                        <th scope="col">Player</th>
+                                        <th scope="col">Job</th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adj Dmg</span></th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Dmg</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Remaining duration on cards active when this window started">Rem Dur</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was not a critical or direct hit">Normal</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a direct hit">DH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical hit">CH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical direct hit">CDH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of total damage which was from damage over time (DoT) events">DoT</span>
+                                        </th>
                                     </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['cardDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                        <tr>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['adjustedDamage'] }}</td>
+                                            <td>{{ damage['realDamage'] }}</td>
+                                            <td>{% if damage['hasCard'] %}{{ damage['remaining'] }}s{% endif %}</td>
+                                            <td>{{ damage['normalPercent'] }}</td>
+                                            <td>{{ damage['dhPercent'] }}</td>
+                                            <td>{{ damage['critPercent'] }}</td>
+                                            <td>{{ damage['cdhPercent'] }}</td>
+                                            <td>{{ damage['dotPercent'] }}</td>
+                                        </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <hr>
                     </div>
@@ -211,29 +213,30 @@
                                 The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetMelee'] }}</span>
                                 at <span class="badge badge-secondary">{{ result['drawOptimalTimeMelee'] }}</span>.
                             </p>
-                
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Play Time</th>
-                                        <th scope="col">Player</th>
-                                        <th scope="col">Job</th>
-                                        <th scope="col">Damage</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for damage in result['drawDamageTableMelee'] %}
-                                    {% if actors[damage['id']]['role'] == 'melee' %}
-                                    <tr>
-                                        <td>{{ damage['time'] }}</td>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['damage'] }}</td>
-                                    </tr>
-                                    {% endif %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <div class="table-responsive-md">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Play Time</th>
+                                            <th scope="col">Player</th>
+                                            <th scope="col">Job</th>
+                                            <th scope="col">Damage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for damage in result['drawDamageTableMelee'] %}
+                                        {% if actors[damage['id']]['role'] == 'melee' %}
+                                        <tr>
+                                            <td>{{ damage['time'] }}</td>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['damage'] }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <hr>
                     </div>
@@ -267,29 +270,30 @@
                                 The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetRanged'] }}</span>
                                 at <span class="badge badge-secondary">{{ result['drawOptimalTimeRanged'] }}</span>.
                             </p>
-                
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Play Time</th>
-                                        <th scope="col">Player</th>
-                                        <th scope="col">Job</th>
-                                        <th scope="col">Damage</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for damage in result['drawDamageTableRanged'] %}
-                                    {% if actors[damage['id']]['role'] == 'ranged' %}
-                                    <tr>
-                                        <td>{{ damage['time'] }}</td>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['damage'] }}</td>
-                                    </tr>
-                                    {% endif %}
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <div class="table-responsive-md">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Play Time</th>
+                                            <th scope="col">Player</th>
+                                            <th scope="col">Job</th>
+                                            <th scope="col">Damage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for damage in result['drawDamageTableRanged'] %}
+                                        {% if actors[damage['id']]['role'] == 'ranged' %}
+                                        <tr>
+                                            <td>{{ damage['time'] }}</td>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['damage'] }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <hr>
                     </div>
