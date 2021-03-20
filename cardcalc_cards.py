@@ -272,18 +272,9 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         
         hit_percent = {}
         # compute percentages
-        # percent_format = '{:5.1f} / {:5.1f} / {:5.1f} / {:5.1f} / {:5.1f}'
-        # percent_format = '{:5.1f}'
         for p in hit_details:
-            if damages[p] != 0:
-                hit_percent[p] = {
-                    'normalPercent': round(100*hit_details[p]['normal'] / (damages[p] - hit_details[p]['dot']), 1),
-                    'dhPercent': round(100*hit_details[p]['dh'] / (damages[p] - hit_details[p]['dot']), 1),
-                    'critPercent': round(100*hit_details[p]['crit'] / (damages[p] - hit_details[p]['dot']), 1),
-                    'cdhPercent': round(100*hit_details[p]['cdh'] / (damages[p] - hit_details[p]['dot']), 1),
-                    'dotPercent': round(100*hit_details[p]['dot'] / damages[p], 1),
-                }
-            else:
+            # either no hit details or no damage done
+            if p not in hit_details or p not in damages or damages[p] == 0:
                 hit_percent[p] = {
                     'normalPercent': 0,
                     'dhPercent': 0,
@@ -291,8 +282,24 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
                     'cdhPercent': 0,
                     'dotPercent': 0,
                 }
-                # raise CardCalcException
-
+            # all damage was from dots
+            elif damages[p] == hit_details[p]['dot']:
+                hit_percent[p] = {
+                    'normalPercent': 0,
+                    'dhPercent': 0,
+                    'critPercent': 0,
+                    'cdhPercent': 0,
+                    'dotPercent': 100,
+                }
+            # otherwise compute non dot damage spread
+            else:
+                hit_percent[p] = {
+                    'normalPercent': round(100*hit_details[p]['normal'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dhPercent': round(100*hit_details[p]['dh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'critPercent': round(100*hit_details[p]['crit'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'cdhPercent': round(100*hit_details[p]['cdh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dotPercent': round(100*hit_details[p]['dot'] / damages[p], 1),
+                }
 
         # adjust the damage for incorrect roles 
         corrected_damage = []
@@ -343,7 +350,7 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
             correct = True
 
         return {
-            'cardPlayTime': fight_info.ToString(time=card.start),
+            'cardPlayTime': fight_info.ToString(time=card.start)[:5],
             'cardDuration': timedelta(milliseconds=card.end-card.start).total_seconds(),                
             'cardPlayed': card.name,
             'cardId': card.castId,
@@ -557,7 +564,7 @@ def cardcalc(report, fight_id, token):
         (melee_draw_damage_table, ranged_draw_damage_table) = _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info, actors)
 
         if not ranged_draw_damage_table.empty:
-            draw_optimal_time_ranged = fight_info.ToString(time=int(ranged_draw_damage_table['timestamp'].iloc[0]))
+            draw_optimal_time_ranged = fight_info.ToString(time=int(ranged_draw_damage_table['timestamp'].iloc[0]))[:5]
             draw_optimal_target_ranged = actors.players[ranged_draw_damage_table['id'].iloc[0]].name
             draw_optimal_damage_ranged = int(ranged_draw_damage_table['damage'].iloc[0])
         else:
@@ -566,7 +573,7 @@ def cardcalc(report, fight_id, token):
             draw_optimal_damage_ranged = 0
 
         if not melee_draw_damage_table.empty:
-            draw_optimal_time_melee = fight_info.ToString(time=int(melee_draw_damage_table['timestamp'].iloc[0]))
+            draw_optimal_time_melee = fight_info.ToString(time=int(melee_draw_damage_table['timestamp'].iloc[0]))[:5]
             draw_optimal_target_melee = actors.players[melee_draw_damage_table['id'].iloc[0]].name
             draw_optimal_damage_melee = int(melee_draw_damage_table['damage'].iloc[0])
         else:
@@ -576,8 +583,8 @@ def cardcalc(report, fight_id, token):
 
 
         card_draw_data = {
-            'startTime': fight_info.ToString(time=draw.start),
-            'endTime': fight_info.ToString(time=draw.end),
+            'startTime': fight_info.ToString(time=draw.start)[:5],
+            'endTime': fight_info.ToString(time=draw.end)[:5],
             'startEvent': draw.startEvent,
             'endEvent': draw.endEvent,
             'startId': int(draw.startId),
