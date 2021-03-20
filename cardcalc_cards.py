@@ -16,11 +16,11 @@ from datetime import timedelta
 import os
 import pandas as pd
 
-from cardcalc_data import Player, Pet, CardPlay, BurstWindow, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
+from cardcalc_data import Player, Pet, CardPlay, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
 
 from cardcalc_fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
-from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage
+from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage, cleanup_hit_data
 
 """
 For the initial version of this the following simple rules are use.
@@ -32,21 +32,100 @@ Redraws and plays are ignored
 """
 def _handle_draw_events(card_events, start_time, end_time):
 
-    last_time = start_time
-    last_event = DrawWindow.GetName(0)
-    current_source = 0
+    active_window = DrawWindow(start = start_time, castId = 0)
     draw_windows = []
+
+    # each event is handled by checking if it's a buff or a cast, searching to check if the same timestamp is already in the list or the active window
+    # if so then update that and continue
+    # otherwise 
 
     for event in card_events:
         # check if cast and if it's draw/sleeve/div
+        # print(" >>> event: {} id: {} timestamp: {} time: {}".format(event['type'], event['abilityGameID'], event['timestamp'], str(timedelta(milliseconds=(event['timestamp']-start_time)))[2:11]))
         if event['type'] == 'cast' and event['abilityGameID'] in [3590, 16552, 7448]:
-            current_source = event['sourceID']
-            draw_windows.append(DrawWindow(current_source, last_time, event['timestamp'], last_event, DrawWindow.GetName(event['abilityGameID'])))
+            # if event is attached to active window then just update that information
+            if active_window.start == event['timestamp']:
+                active_window.castId = event['abilityGameID']
+                active_window.startId = event['abilityGameID']
+                active_window.startEvent = DrawWindow.GetName(active_window.startId)
+            # otherwise close out the old active window and make a new one
+            else:
+                if active_window.startId == 0:
+                    active_window.source = event['sourceID']
+                active_window.end = event['timestamp']
+                active_window.endId = event['abilityGameID']
+                active_window.endEvent = DrawWindow.GetName(active_window.endId)
+                # print("Closing CAST at {}".format(str(timedelta(milliseconds=(event['timestamp']-start_time)))[2:11]))
+                draw_windows.append(active_window)
+                active_window = DrawWindow(start = event['timestamp'], source = event['sourceID'], castId = event['abilityGameID'])
 
-            last_time = event['timestamp']
-            last_event = DrawWindow.GetName(event['abilityGameID'])
+            # search for previously closed windows that end at this timestamp
+            # and thus are missing a proper end cast
+            end_set = [ draw
+                        for draw in draw_windows
+                        if draw.source == event['sourceID'] and draw.end == event['timestamp']]
+
+            if end_set:
+                draw_end = end_set[0]
+                draw_end.endId = event['abilityGameID']
+                draw_end.endEvent = DrawWindow.GetName(draw_end.endId)
+                # print("Fixing endId and endEvent at {} - {}".format(str(timedelta(milliseconds=(draw_end.end-start_time)))[2:11], draw_end.endId))
+
+            # search for previously handled buff windows without a cast
+            draw_set = [ draw
+                        for draw in draw_windows
+                        if draw.source == event['sourceID'] and draw.start == event['timestamp'] and draw.castId == 0]
+            # if one is found then update it
+            if draw_set:
+                draw = draw_set[0]
+                draw.castId = event['abilityGameID']
+                draw.startEvent = DrawWindow.GetName(draw.castId)
+                
+        # if buff then perform similar checks
+        elif event['type'] == 'applybuff' and event['abilityGameID'] in [1000913, 1000914, 1000915, 1000916, 1000917, 1000918]:
+            # if event is attached to active window then just update that information
+            if active_window.start == event['timestamp']:
+                active_window.buffId = event['abilityGameID']
+                active_window.cardDrawn = DrawWindow.GetCard(active_window.buffId)
+            ####
+            ## TODO: need to figure out how to handle event closing properly
+            ## as this currently includes redraws which isn't quite what I want
+            ## so for now the code just can't handle old sleevedraw yet
+            ##
+            ## the best way to handle is probably to find the sleevedraw buff
+            ## event and use that to split up the draw windows
+            ####
+
+            # otherwise close out the old active window and make a new one
+            # else:
+            #     if active_window.startId == 0:
+            #         active_window.source = event['sourceID']
+            #     active_window.end = event['timestamp']
+            #     active_window.endEvent = DrawWindow.GetBuff(event['abilityGameID'])
+            #     active_window.endId = DrawWindow.ConvertID(event['abilityGameID'])
+            #     # print("Closing EVENT at {}".format(str(timedelta(milliseconds=(event['timestamp']-start_time)))[2:11]))
+            #     draw_windows.append(active_window)
+            #     active_window = DrawWindow(start = event['timestamp'], source = event['sourceID'], buffId = event['abilityGameID'])
+
+            # search for previously handled draw windows without an attached buff and update them
+            draw_set = [draw
+                        for draw in draw_windows
+                        if draw.source == event['sourceID'] and draw.start == event['timestamp'] and draw.buffId == 0]
+            # if one is found then update it
+            if draw_set:
+                draw = draw_set[0]
+                draw.buffId = event['abilityGameID']
+                draw.cardDrawn = DrawWindow.GetCard(draw.buffId)
     
-    draw_windows.append(DrawWindow(current_source, last_time, end_time, last_event, DrawWindow.GetName(-1)))
+    active_window.end = end_time
+    active_window.endEvent = DrawWindow.GetName(-1)
+    active_window.endId = -1
+    draw_windows.append(active_window)
+
+    for draw in draw_windows:
+        if draw.endEvent is None:
+            draw.endEvent = 'Unknown'
+            draw.endId = -2
 
     return draw_windows
 
@@ -189,11 +268,40 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         }
     else:
         # compute damage done during card play window
-        (_, damages, _) = compute_total_damage(damage_report, card.start, card.end, actors)
+        (_, damages, _, _, hit_details) = compute_total_damage(damage_report, card.start, card.end, actors, detailedInfo=True)
         
-        # Damage is already corrected globally so there no longer needs to be a correction based on the bonus
+        hit_percent = {}
+        # compute percentages
+        for p in hit_details:
+            # either no hit details or no damage done
+            if p not in hit_details or p not in damages or damages[p] == 0:
+                hit_percent[p] = {
+                    'normalPercent': 0,
+                    'dhPercent': 0,
+                    'critPercent': 0,
+                    'cdhPercent': 0,
+                    'dotPercent': 0,
+                }
+            # all damage was from dots
+            elif damages[p] == hit_details[p]['dot']:
+                hit_percent[p] = {
+                    'normalPercent': 0,
+                    'dhPercent': 0,
+                    'critPercent': 0,
+                    'cdhPercent': 0,
+                    'dotPercent': 100,
+                }
+            # otherwise compute non dot damage spread
+            else:
+                hit_percent[p] = {
+                    'normalPercent': round(100*hit_details[p]['normal'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dhPercent': round(100*hit_details[p]['dh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'critPercent': round(100*hit_details[p]['crit'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'cdhPercent': round(100*hit_details[p]['cdh'] / (damages[p] - hit_details[p]['dot']), 1),
+                    'dotPercent': round(100*hit_details[p]['dot'] / damages[p], 1),
+                }
 
-        # now adjust the damage for incorrect roles 
+        # adjust the damage for incorrect roles 
         corrected_damage = []
         active_cards = [prev_card for prev_card in cards 
                             if prev_card.start < card.start
@@ -201,11 +309,15 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
 
         for pid, dmg in damages.items():
             mod_dmg = dmg
-            has_card = 'No'
+            has_card = False
+            has_card_remaining = 0
 
             for prev_card in active_cards:
                 if prev_card.start < card.start and prev_card.end > card.start and prev_card.target == pid:
-                    has_card = 'Yes'
+                    has_card = True
+                    # this doesn't check for early cutoffs that would occur from
+                    # playing another card on someone before the first one ends
+                    has_card_remaining = prev_card.end - card.start
 
             if card.role != actors.players[pid].role:
                 mod_dmg = int(dmg/2)
@@ -213,11 +325,12 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
             corrected_damage.append({
                 'id': pid,
                 'hasCard': has_card,
+                'remaining': round(timedelta(milliseconds=has_card_remaining).total_seconds(),1),
                 'realDamage': dmg,
                 'adjustedDamage': mod_dmg,
                 'role': actors.players[pid].role,
                 'job': actors.players[pid].job,
-            })
+            } | hit_percent[pid])
 
         # convert to dataframe
         card_damage_table = pd.DataFrame(corrected_damage)
@@ -225,7 +338,7 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
         card_damage_table.sort_values(by='adjustedDamage', ascending=False, inplace=True)
 
         # get the highest damage target that isn't LimitBreak
-        optimal_target = card_damage_table[ (card_damage_table['role'] != 'LimitBreak') & (card_damage_table['hasCard'] == 'No')]['adjustedDamage'].idxmax()
+        optimal_target = card_damage_table[ (card_damage_table['role'] != 'LimitBreak') & (card_damage_table['hasCard'] == False) ]['adjustedDamage'].idxmax()
 
         if optimal_target is None:
             optimal_target = 'Nobody?'
@@ -237,9 +350,10 @@ def _handle_card_play(card, cards, damage_report, actors, fight_info):
             correct = True
 
         return {
-            'cardPlayTime': fight_info.ToString(time=card.start),
+            'cardPlayTime': fight_info.ToString(time=card.start)[:5],
             'cardDuration': timedelta(milliseconds=card.end-card.start).total_seconds(),                
             'cardPlayed': card.name,
+            'cardId': card.castId,
             'cardSource': card.source,
             'cardTarget': card.target,
             'cardDamageTable': card_damage_table.to_dict(orient='records'),
@@ -251,81 +365,120 @@ def _get_active_card(cards, draw):
     active_cards = []
     for c in cards:
         # check if the card was played during the draw window
-        if c.cast > draw.start and c.cast < draw.end:
+        if c.cast > draw.start and c.cast <= draw.end:
             active_cards.append(c)
         if c.cast > draw.end:
             break
     return active_cards
 
-def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info):
-    draw_damage = []
+def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info, actors):
+    melee_draw_damage = []
+    ranged_draw_damage = []
 
     data_count = 0
+
+    if draw_window_duration < 4.0:
+        data_count = 2
+    elif draw_window_duration < 10.0:
+        data_count = 4
+    elif draw_window_duration < 20.0:
+        data_count = 6
+    else:
+        data_count = 8
+
+    sorted_damage_list = pd.DataFrame((draw_window_damage_collection.df.unstack().to_dict().items()), columns=['combined', 'damage'])
+    
+    sorted_damage_list['id'] = sorted_damage_list['combined'].apply(lambda row: row[0])
+    sorted_damage_list['timestamp'] = sorted_damage_list['combined'].apply(lambda row: row[1])
+    sorted_damage_list.drop(columns=['combined'], inplace=True)
+    sorted_damage_list.sort_values(by='damage', inplace=True, ascending=False)
+
+    # separate out the ranged and melee instances
+    sorted_damage_list['role'] = sorted_damage_list['id'].apply(lambda row: actors.players[row].role)
+
+    melee_damage_list = sorted_damage_list.loc[lambda df: (df['role'] == 'melee')]
+    ranged_damage_list = sorted_damage_list.loc[lambda df:(df['role'] == 'ranged')]
+
     collected_count = 0
     examined_count = 0
 
-    if draw_window_duration < 4.0:
-        data_count = 3
-    elif draw_window_duration < 10.0:
-        data_count = 5
-    elif draw_window_duration < 20.0:
-        data_count = 8
-    else:
-        data_count = 10
-
-    sorted_damage_list = sorted(draw_window_damage_collection.df.unstack().to_dict().items(), key=lambda x: x[1], reverse=True)
-
-    # I suspect this is one of the most inefficient pieces of the code
-    # but it might lose out to the burst window search
-    current_item = sorted_damage_list[examined_count]
-    examined_count += 1
-    (target_opt, time_opt, damage_opt) = (current_item[0][0], current_item[0][1], current_item[1])
-    
-    collected_count += 1
-    draw_damage.append({
-        'count': collected_count,
-        'id': target_opt,
-        'damage': damage_opt,
-        'timestamp': time_opt,
-        'time': fight_info.ToString(time=time_opt)[:5],
-    })
-    
-    current_damage = damage_opt
-    while collected_count < data_count and examined_count < len(sorted_damage_list):
+    while collected_count < data_count and examined_count < melee_damage_list['id'].size:
         # get the next lowest damage instance
-        current_item = sorted_damage_list[examined_count]
+        # current_item = melee_damage_list.iloc[examined_count]
+        
+        target_opt = melee_damage_list['id'].iloc[examined_count]
+        time_opt = melee_damage_list['timestamp'].iloc[examined_count]
+        damage_opt = melee_damage_list['damage'].iloc[examined_count]
+        # ) = (current_item[0][0], current_item[0][1], current_item[1])
+
         examined_count += 1
-        (target_new, time_new, damage_new) = (current_item[0][0], current_item[0][1], current_item[1])
 
-        # update the max damage value we've looked up
-        current_damage = damage_new
-
-        # if it's the same player in a window that's already 
-        # recorded skip it
+        # check if the new entry we've selected is in a window of 4s as an entry from that player with higher damage
         ignore_entry = False
-        for table_entry in draw_damage:
-            if target_new == table_entry['id'] and abs(time_new - table_entry['timestamp']) < 4000:
+        for table_entry in melee_draw_damage:
+            if target_opt == table_entry['id'] and abs(time_opt - table_entry['timestamp']) < 4000:
                 ignore_entry = True
             
         if ignore_entry:
             continue
 
         # if the max damage is greater than 0 then add an entry:
-        if damage_new > 0:
+        if damage_opt > 0:
             collected_count += 1
-            draw_damage.append({
+            melee_draw_damage.append({
                 'count': collected_count,
-                'id': target_new,
-                'damage': damage_new,
-                'timestamp': time_new,
-                'time': fight_info.ToString(time=time_new)[:5],
+                'id': target_opt,
+                'damage': damage_opt,
+                'timestamp': time_opt,
+                'time': fight_info.ToString(time=int(time_opt))[:5],
             })
 
-    draw_damage_table = pd.DataFrame(draw_damage)
-    draw_damage_table.set_index('id', inplace=True, drop=False)
-    draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
+    collected_count = 0
+    examined_count = 0
 
-    return draw_damage_table, time_opt, target_opt, damage_opt
+    while collected_count < data_count and examined_count < ranged_damage_list['id'].size:
+        # get the next lowest damage instance
+        target_opt = ranged_damage_list['id'].iloc[examined_count]
+        time_opt = ranged_damage_list['timestamp'].iloc[examined_count]
+        damage_opt = ranged_damage_list['damage'].iloc[examined_count]
+
+        examined_count += 1
+        # (target_opt, time_opt, damage_opt) = (current_item[0][0], current_item[0][1], current_item[1])
+
+        # check if the new entry we've selected is in a window of 4s as an entry from that player with higher damage
+        ignore_entry = False
+        for table_entry in ranged_draw_damage:
+            if target_opt == table_entry['id'] and abs(time_opt - table_entry['timestamp']) < 4000:
+                ignore_entry = True
+            
+        if ignore_entry:
+            continue
+
+        # if the max damage is greater than 0 then add an entry:
+        if damage_opt > 0:
+            collected_count += 1
+            ranged_draw_damage.append({
+                'count': collected_count,
+                'id': target_opt,
+                'damage': damage_opt,
+                'timestamp': time_opt,
+                'time': fight_info.ToString(time=int(time_opt))[:5],
+            })
+
+    melee_draw_damage_table = pd.DataFrame(melee_draw_damage)
+
+    if not melee_draw_damage_table.empty:
+        melee_draw_damage_table.set_index('id', inplace=True, drop=False)
+        melee_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
+
+    ranged_draw_damage_table = pd.DataFrame(ranged_draw_damage)
+    
+    if not ranged_draw_damage_table.empty:
+        ranged_draw_damage_table.set_index('id', inplace=True, drop=False)
+        ranged_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
+
+
+    return (melee_draw_damage_table, ranged_draw_damage_table)
 
 def cardcalc(report, fight_id, token):
     """
@@ -350,8 +503,11 @@ def cardcalc(report, fight_id, token):
     # Sum dot snapshots
     damage_report = calc_snapshot_damage(damage_events)
 
+    # clean up hit types
+    damage_report = cleanup_hit_data(damage_report)
+
     # compute data without card buffs
-    compute_remove_card_damage(damage_report, cards, actors)
+    damage_report = compute_remove_card_damage(damage_report, cards, actors)
 
     if not cards:
         raise CardCalcException("No cards played in fight")
@@ -405,17 +561,42 @@ def cardcalc(report, fight_id, token):
 
         draw_window_duration = timedelta(milliseconds=(draw.end-draw.start)).total_seconds()
 
-        draw_damage_table, time_opt, target_opt, damage_opt = _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info)
+        (melee_draw_damage_table, ranged_draw_damage_table) = _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info, actors)
+
+        if not ranged_draw_damage_table.empty:
+            draw_optimal_time_ranged = fight_info.ToString(time=int(ranged_draw_damage_table['timestamp'].iloc[0]))[:5]
+            draw_optimal_target_ranged = actors.players[ranged_draw_damage_table['id'].iloc[0]].name
+            draw_optimal_damage_ranged = int(ranged_draw_damage_table['damage'].iloc[0])
+        else:
+            draw_optimal_time_ranged = 'None'
+            draw_optimal_target_ranged = 'None'
+            draw_optimal_damage_ranged = 0
+
+        if not melee_draw_damage_table.empty:
+            draw_optimal_time_melee = fight_info.ToString(time=int(melee_draw_damage_table['timestamp'].iloc[0]))[:5]
+            draw_optimal_target_melee = actors.players[melee_draw_damage_table['id'].iloc[0]].name
+            draw_optimal_damage_melee = int(melee_draw_damage_table['damage'].iloc[0])
+        else:
+            draw_optimal_time_melee = 'None'
+            draw_optimal_target_melee = 'None'
+            draw_optimal_damage_melee = 0
+
 
         card_draw_data = {
-            'startTime': fight_info.ToString(time=draw.start),
-            'endTime': fight_info.ToString(time=draw.end),
+            'startTime': fight_info.ToString(time=draw.start)[:5],
+            'endTime': fight_info.ToString(time=draw.end)[:5],
             'startEvent': draw.startEvent,
             'endEvent': draw.endEvent,
-            'drawDamageTable': draw_damage_table.to_dict(orient='records'),
-            'drawOptimalTime': fight_info.ToString(time=time_opt),
-            'drawOptimalTarget': actors.players[target_opt].name,
-            'drawOptimalDamage': damage_opt,
+            'startId': int(draw.startId),
+            'endId': int(draw.endId),
+            'drawDamageTableMelee': melee_draw_damage_table.to_dict(orient='records'),
+            'drawDamageTableRanged': ranged_draw_damage_table.to_dict(orient='records'),
+            'drawOptimalTimeRanged': draw_optimal_time_ranged,
+            'drawOptimalTargetRanged': draw_optimal_target_ranged,
+            'drawOptimalDamageRanged': draw_optimal_damage_ranged,
+            'drawOptimalTimeMelee': draw_optimal_time_melee,
+            'drawOptimalTargetMelee': draw_optimal_target_melee,
+            'drawOptimalDamageMelee': draw_optimal_damage_melee,
             'count': count,
         }
 

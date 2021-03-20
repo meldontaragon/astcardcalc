@@ -42,6 +42,7 @@
         <ul>
             <li>The damage for each player is summed up as if a card was played at this time lasting for 15s</li>
             <li>The starting time is incremented in 1s time steps while checking that it is still before the time of final event for the window</li>
+            <li>The ranged and melee results are checked separately and reported in different tabs.</li>
             <li>A number of maximal damage values are selected from this collection based on the size of the window</li>
             <table style="width:40%">
                 <tr>
@@ -50,19 +51,19 @@
                 </tr>
                 <tr>
                     <td>0s - 4s</td>
-                    <td>3</td>
+                    <td>2</td>
                 </tr>
                 <tr>
                     <td>4s - 10s</td>
-                    <td>5</td>
+                    <td>4</td>
                 </tr>
                 <tr>
                     <td>10s - 20s</td>
-                    <td>8</td>
+                    <td>6</td>
                 </tr>
                 <tr>
                     <td>20s+</td>
-                    <td>10</td>
+                    <td>8</td>
                 </tr>
             </table>
             <li>The same character will not be listed again within 4s of a previously listed damage window with higher total damage</li>
@@ -90,7 +91,7 @@
 <h2>Who made this?</h2>
 
 <p>This projected was adapted from the tethercalc project made by Platinum Xephera on the Ultros server who graciously let me use their code as a starting point. It's currently managed by Marielle Kaidafaux on Adamantoise. I made it because I wanted a tool to examine optimal targets for cards while playing Astrologian. I hope the {{ report_count }} analyzed reports have been useful.</p>
-<p>If you notice any issues, feel free to DM me through Discord (Melody ♫#1653), or open issues and pull requests on the <a href="https://github.com/meldontaragon/astcardcalc">GitHub repo</a> for this site.</p>
+<p>If you notice any issues, feel free to DM me through Discord (Melody ♫#3761), or open issues and pull requests on the <a href="https://github.com/meldontaragon/astcardcalc">GitHub repo</a> for this site.</p>
 
 <h2>Changes</h2>
 <p>2021-02-25: Fixed issues where card bonuses were being removed twice in certain cases, cases where future cards bonuses weren't handled correctly, and cases where damage event occurring at the same time as buff events would result in improper handling of the card bonus. These were fixed in git commit <a href="https://github.com/meldontaragon/astcardcalc/commit/45ff176671c901971bbe1a8bb77391c275c18b22">45ff176</a> and <a href="https://github.com/meldontaragon/astcardcalc/commit/fcfbc3393586678c02439a501d153b317eb164fc">fcfbc33</a></p>

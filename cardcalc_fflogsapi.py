@@ -27,15 +27,17 @@ client = GraphqlClient(FFLOGS_URL)
 # this is used to handle sorting events
 def _event_priority(event):
     return {
-        'applydebuff': 1,
         'applybuff': 1,
-        'applydebuffstack': 1,
-        'refreshdebuff': 2,
-        'refreshbuff': 2,
-        'removedebuff': 4,
-        'removebuff': 4,
-        'damage': 3,
-        'damagesnapshot': 3,
+        'applybuffstack': 2,
+        'applydebuff': 3,
+        'applydebuffstack': 4,
+        'refreshbuff': 5,
+        'refreshdebuff': 6,
+        'removedebuff': 7,
+        'removebuff': 8,
+        'removebuffstack': 9,
+        'damage': 10,
+        'damagesnapshot': 11,
     }[event]
 
 # used to obtain a bearer token from the fflogs api
@@ -93,7 +95,6 @@ def decompose_url(url, token):
     fight_id = int(fight_id)
 
     return report_id, fight_id
-
 
 def get_fight_info(report, fight, token):
     variables = {

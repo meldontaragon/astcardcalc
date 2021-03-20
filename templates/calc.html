@@ -20,13 +20,27 @@
         >
         <input 
             type="radio" 
-            id="tab-carddraw-{{ result['count'] }}" 
+            id="tab-details-{{ result['count'] }}" 
+            name="tab-cards-{{ result['count'] }}" 
+            aria-hidden="true"
+        >
+        <input 
+            type="radio" 
+            id="tab-carddraw-melee-{{ result['count'] }}" 
+            name="tab-cards-{{ result['count'] }}"
+            aria-hidden="true"
+        >
+        <input 
+            type="radio" 
+            id="tab-carddraw-ranged-{{ result['count'] }}" 
             name="tab-cards-{{ result['count'] }}"
             aria-hidden="true"
         >
         <ul aria-hidden="true">
             <li><label for="tab-cardplay-{{ result['count'] }}">Card Play</label></li>
-            <li><label for="tab-carddraw-{{ result['count'] }}">Card Draw</label></li>
+            <li><label for="tab-details-{{ result['count'] }}">Detailed Play Info</label></li>
+            <li><label for="tab-carddraw-melee-{{ result['count'] }}">Card Draw - Melee</label></li>
+            <li><label for="tab-carddraw-ranged-{{ result['count'] }}">Card Draw - Ranged</label></li>
         </ul>
         <div>
             <section>
@@ -37,39 +51,50 @@
                     <div class="col">
                         <p>
                             <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
-                            played 
-                            <span class="badge badge-secondary">{{ result.cardPlayed }}</span>
+                            played
+                            <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
                             on
                             <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
                             at
                             <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
                         <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
-            
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Player</th>
-                                    <th scope="col">Job</th>
-                                    <th scope="col">Adjusted Damage</th>
-                                    <th scope="col">Raw Damage</th>
-                                    <th scope="col">Has Card?</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for damage in result['cardDamageTable'] %}
-                                {% if actors[damage['id']]['role'] != 'LimitBreak' %}
-                                    <tr>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['adjustedDamage'] }}</td>
-                                        <td>{{ damage['realDamage'] }}</td>
-                                        <td>{{ damage['hasCard'] }}</td>
-                                    </tr>
-                                {% endif %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="table-responsive-md">
+                            <table class="table table-striped">
+                                <thead>
+                                    <div>
+                                        <tr>
+                                            <th scope="col">
+                                                Player
+                                            </th>
+                                            <th scope="col">
+                                                Job
+                                            </th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adjusted Damage</span></th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Damage</span>
+                                            </th>
+                                            <th scope="col">
+                                                <span data-toggle="tooltip" data-placement="bottom" title="Did the player have a card already when this window started?">Has Card?</span>
+                                            </th>
+                                        </tr>
+                                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['cardDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                        <tr>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['adjustedDamage'] }}</td>
+                                            <td>{{ damage['realDamage'] }}</td>
+                                            <td>{% if damage['hasCard'] %}✔{% endif %}</td>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                     <hr>
                     </div>
@@ -82,45 +107,193 @@
             </section>
 
             <section>
-                <h2>Card Draw</h2>
+                <h2>Detailed Play Info</h2>
+                <div class="content">
+                    {% if result.cardPlayed != 'None' %}
+                    <div class="row result-row mb-2 p-2">
+                    <div class="col">
+                        <p>
+                            <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
+                            played 
+                            <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
+                            on
+                            <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
+                            at
+                            <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
+                        </p>
+                        <p>The correct target was <span class="badge badge-{% if result['cardCorrect'] %}success{% else %}danger{% endif %}">{{ result['cardOptimalTarget'] }}</span></p>
+                        <div class="table-responsive-md">
+                            <table class="table table-striped">
+                                <thead>
+                                    <div>
+                                    <tr>
+                                        <th scope="col">Player</th>
+                                        <th scope="col">Job</th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage adjusted according to the role bonus of the card played.">Adj Dmg</span></th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Total damage done in the card window">Raw Dmg</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Remaining duration on cards active when this window started">Rem Dur</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was not a critical or direct hit">Normal</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a direct hit">DH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical hit">CH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of non-DoT damage which was a critical direct hit">CDH</span>
+                                        </th>
+                                        <th scope="col">
+                                            <span data-toggle="tooltip" data-placement="bottom" title="Percentage of total damage which was from damage over time (DoT) events">DoT</span>
+                                        </th>
+                                    </tr>
+                                    </div>
+                                </thead>
+                                <tbody>
+                                    {% for damage in result['cardDamageTable'] %}
+                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                        <tr>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['adjustedDamage'] }}</td>
+                                            <td>{{ damage['realDamage'] }}</td>
+                                            <td>{% if damage['hasCard'] %}{{ damage['remaining'] }}s{% endif %}</td>
+                                            <td>{{ damage['normalPercent'] }}%</td>
+                                            <td>{{ damage['dhPercent'] }}%</td>
+                                            <td>{{ damage['critPercent'] }}%</td>
+                                            <td>{{ damage['cdhPercent'] }}%</td>
+                                            <td>{{ damage['dotPercent'] }}%</td>
+                                        </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <hr>
+                    </div>
+                    {% else %}
+                    <div class="row result-row mb-2 p-2">
+                        No card was played in this draw window (likely a result of Divination being cast)
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <section>
+                <h2>Card Draw - Melee</h2>
+                <div class="content">
+                    <div class="row result-row mb-2 p-2">
+                        <div class="col">
+                            <p>
+                                From
+                                {% if result['startId'] > 0 %}
+                                <span><ActionFetch name="{{ result['startEvent'] }}" :id="{{ result['startId'] }}" /></span>
+                                {% else %}
+                                <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                {% endif %}
+                                at 
+                                <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
+                                until
+                                {% if result['endId'] > 0 %}
+                                <span><ActionFetch name="{{ result['endEvent'] }}" :id="{{ result['endId'] }}" /></span>
+                                {% else %}
+                                <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                {% endif %}
+                                at
+                                <span class="badge badge-secondary">{{ result['endTime'] }}</span>
+                            </p>
+                            <p>
+                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetMelee'] }}</span>
+                                at <span class="badge badge-secondary">{{ result['drawOptimalTimeMelee'] }}</span>.
+                            </p>
+                            <div class="table-responsive-md">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Play Time</th>
+                                            <th scope="col">Player</th>
+                                            <th scope="col">Job</th>
+                                            <th scope="col">Damage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for damage in result['drawDamageTableMelee'] %}
+                                        {% if actors[damage['id']]['role'] == 'melee' %}
+                                        <tr>
+                                            <td>{{ damage['time'] }}</td>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['damage'] }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <hr>
+                    </div>
+
+                </div>
+            </section>
+            <section>
+                <h2>Card Draw - Ranged</h2>
                 <div class="content">
                     <div class="row result-row mb-2 p-2">
                         <div class="col">
                             <p>
                                 From 
+                                {% if result['startId'] > 0 %}
+                                <span><ActionFetch name="{{ result['startEvent'] }}"  :id="{{ result['startId'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['startEvent'] }}</span>
+                                {% endif %}
                                 at 
                                 <span class="badge badge-secondary">{{ result['startTime'] }}</span> 
-                                until 
+                                until
+                                {% if result['endId'] > 0 %}
+                                <span><ActionFetch :id="{{ result['endId'] }}" name="{{ result['endEvent'] }}" /></span>
+                                {% else %}
                                 <span class="badge badge-secondary">{{ result['endEvent'] }}</span>
+                                {% endif %}
                                 at
                                 <span class="badge badge-secondary">{{ result['endTime'] }}</span>
                             </p>
                             <p>
-                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTarget'] }}</span>
-                                at <span class="badge badge-secondary">{{ result['drawOptimalTime'] }}</span>.
+                                The optimal target was <span class="badge badge-secondary">{{ result['drawOptimalTargetRanged'] }}</span>
+                                at <span class="badge badge-secondary">{{ result['drawOptimalTimeRanged'] }}</span>.
                             </p>
-                
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th scope="col">Play Time</th>
-                                        <th scope="col">Player</th>
-                                        <th scope="col">Job</th>
-                                        <th scope="col">Damage</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for damage in result['drawDamageTable'] %}
-                                    <tr>
-                                        <td>{{ damage['time'] }}</td>
-                                        <td>{{ actors[damage['id']]['name'] }}</td>
-                                        <td>{{ actors[damage['id']]['job'] }}</td>
-                                        <td>{{ damage['damage'] }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <div class="table-responsive-md">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Play Time</th>
+                                            <th scope="col">Player</th>
+                                            <th scope="col">Job</th>
+                                            <th scope="col">Damage</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for damage in result['drawDamageTableRanged'] %}
+                                        {% if actors[damage['id']]['role'] == 'ranged' %}
+                                        <tr>
+                                            <td>{{ damage['time'] }}</td>
+                                            <td>{{ actors[damage['id']]['name'] }}</td>
+                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ damage['damage'] }}</td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         <hr>
                     </div>
@@ -130,5 +303,4 @@
         </div>
     </div>
     {% endfor %}
-
 {% endblock %}
