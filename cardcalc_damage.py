@@ -165,9 +165,11 @@ def compute_total_damage(damage_report,
     # create a dataframe with only the current time window
     current_df = damage_report.loc[lambda df: (df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
 
+    # for each unique actor present, sum the damage done during this time frame
     for actor in current_df['sourceID'].unique():
         combined_damage[actor] = current_df.loc[lambda df: df['sourceID'] == actor, 'amount'].sum()
 
+    # get detailed info on crit/dh rates and percentage of damage from dots
     if detailedInfo:
         for actor in current_df['sourceID'].unique():
             normal = current_df.loc[lambda df: (df['sourceID'] == actor) & (df['hitType'] == 'normal'), 'amount'].sum()
@@ -184,6 +186,8 @@ def compute_total_damage(damage_report,
                 'dot': dot,
             }
 
+    # combine play and pet info as well as create empty entries for actors
+    # without any damage done in the current window
     player_hit_details = {}
     if detailedInfo:
         for p in actors.players:
@@ -201,9 +205,8 @@ def compute_total_damage(damage_report,
             if p in hit_details and actors.pets[p].owner in player_hit_details:
                 for (hitType, value) in hit_details[p].items():
                     player_hit_details[actors.pets[p].owner][hitType] += value
-
-        combined_damage[actor] = current_df.loc[lambda df: df['sourceID'] == actor, 'amount'].sum()
     
+    # create entries for each player actor
     player_damage = {}
     for p in actors.players:
         if p in combined_damage:
@@ -212,6 +215,8 @@ def compute_total_damage(damage_report,
             player_damage[p] = 0
             combined_damage[p] = 0
 
+    # create entries for each pet actor and also add the pet damage to that of
+    # the pet owner
     pet_damage = {}
     for p in actors.pets:
         if p in combined_damage:
