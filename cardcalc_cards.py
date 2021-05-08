@@ -20,7 +20,7 @@ from cardcalc_data import Player, Pet, CardPlay, DrawWindow, FightInfo, BurstDam
 
 from cardcalc_fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 
-from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage, cleanup_hit_data
+from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage, cleanup_hit_data, cleanup_prepare_events
 
 """
 For the initial version of this the following simple rules are use.
@@ -501,7 +501,13 @@ def cardcalc(report, fight_id, token):
     damage_events = get_damage_events(fight_info, token)
 
     # Sum dot snapshots
-    damage_report = calc_snapshot_damage(damage_events)
+    tick_report = calc_snapshot_damage(damage_events)
+    # get correct timestamps from prepare events
+    raw_report = cleanup_prepare_events(damage_events)
+    # print(raw_report)
+
+    damage_report = pd.concat([tick_report, raw_report], ignore_index=True)
+    damage_report.sort_values(by='timestamp', inplace=True, ignore_index=True)
 
     # clean up hit types
     damage_report = cleanup_hit_data(damage_report)

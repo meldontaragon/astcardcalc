@@ -3,8 +3,15 @@ from cardcalc_data import Player, Pet, SearchWindow, FightInfo, BurstDamageColle
 import pandas as pd
 
 """
-This takes a collection of damage events associated with ticks as well as the 
+Takes a bunch of buff/debuff events for dots and combines it
+with the damage events for those dots creating a single 
+combined event for the initial snapshot of the dot
+
+Returns a pandas dataframe with *just* the snapshot event for the dot
+containing all damage done by the dot
 """
+## TODO: only return the tick damage snapshot events
+## all other damage event handling will be done elsewhere
 def calc_snapshot_damage(damage_events):
     active_debuffs = {}
     summed_tick_damage = []
@@ -21,7 +28,8 @@ def calc_snapshot_damage(damage_events):
         # damage is summed from the application (apply or reapply) until
         # another application event or the end of the data
         
-        # that damage is then reassociated with application event 
+        # that damage is then associated with the timestamp 
+        # for the (re)application event 
 
         if event['type'] in ['applybuff', 'refreshbuff', 'applydebuff', 'refreshdebuff'] and event['timestamp']:
             # if it's not an active effect then add it
@@ -62,10 +70,13 @@ def calc_snapshot_damage(damage_events):
             })
 
     # finally sort the new array of snapshotdamage events and return it
-    damage_report = pd.DataFrame(summed_tick_damage + damage_events['rawDamage'], columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'multistrike'])
+    damage_report = pd.DataFrame(summed_tick_damage, columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'multistrike'])
     damage_report.sort_values(by='timestamp', inplace=True, ignore_index=True)
     return damage_report
 
+"""
+Old function for handling tick damage, is deprecated now
+"""
 def calc_tick_damage(damage_events):
     instanced_tick_damage = []
     
@@ -86,6 +97,37 @@ def calc_tick_damage(damage_events):
     damage_report = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'multistrike'])
 
     return damage_report
+
+"""
+Given a collection of raw damage events and the prepares events 
+corresponding to those this combines them and returns just the raw 
+damage events with new timestamps from the preparing snapshot
+"""
+def cleanup_prepare_events(damage_events):
+    damages = pd.DataFrame(damage_events['rawDamage'], columns=['type', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID', 'packetID', 'amount', 'hitType', 'multistrike', 'timestamp'])
+    prepares = pd.DataFrame(damage_events['prepDamage'], columns=['timestamp', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID', 'packetID'])
+
+    # packetID sorting (for debug purposes)
+    damages['targetInstance'] = damages['targetInstance'].fillna(0)
+    damages.sort_values(inplace=True, by='packetID',ignore_index=True)
+
+    prepares['targetInstance'] = prepares['targetInstance'].fillna(0)
+    prepares.sort_values(inplace=True, by='packetID', ignore_index=True)
+
+    # change duplicate name
+    damages.rename(inplace=True, columns={'timestamp': 'damage_time'})
+
+    damages.set_index(inplace=True, drop=True, keys=['packetID', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID'])
+    # , 'damage_time'])
+    prepares.set_index(inplace=True, drop=True, keys=['packetID', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID'])
+    
+    prepares = prepares[~prepares.index.duplicated(keep='first')]
+    # .index.drop_duplicates(keep='first')
+
+    merged_damage = pd.merge(left=damages, right=prepares, how="left", sort='timestamp', left_index=True, right_index=True, validate='m:1')
+
+    merged_damage.reset_index(inplace=True)
+    return merged_damage
 
 # this take a raw damage report with snapshot damage already resolved
 # and cleans up the multistrike/hittype data so that each damage entry

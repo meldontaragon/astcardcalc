@@ -221,6 +221,14 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
     
     return card_events
 
+"""
+Get the collection of damage events from FFLogs for a fight 
+defined in fight_info
+Returns dictionary of damage events with three sections:
+- prepDamage: the prepare event snapshots for non-tick damage
+- rawDamage: the actual damage events for non-tick damage
+- tickDamage: buff/debuff events and damage events for tick damage
+"""
 def get_damage_events(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
@@ -240,6 +248,16 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
             ) {
                 data
             }
+            damagePrep: events(
+                startTime: $startTime,
+                endTime: $endTime,
+                dataType: DamageDone,
+                limit: 10000,
+                filterExpression: "isTick=false and type='calculateddamage' and isUnpairedCalculation=false"
+            ) {
+                data
+            }
+
             tickDamage: events(
                 startTime: $startTime,
                 endTime: $endTime,
@@ -275,7 +293,9 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
 
     data = call_fflogs_api(query, variables, token)
 
+    prep_damages = data['data']['reportData']['report']['damagePrep']['data']
     base_damages = data['data']['reportData']['report']['damage']['data']
+
     tick_damages = data['data']['reportData']['report']['tickDamage']    ['data']
     tick_events = data['data']['reportData']['report']['tickEvents']['data']
     ground_events = data['data']['reportData']['report']['groundEvents']['data']
@@ -284,6 +304,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
 
     damage_events = {
         'rawDamage': base_damages,
+        'prepDamage': prep_damages,
         'tickDamage': combined_tick_events,
     }
     return damage_events
