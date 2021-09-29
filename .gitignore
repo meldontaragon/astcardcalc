@@ -3,6 +3,7 @@ __pycache__/
 
 sample/
 sample/*
+profiling/*
 
 .exports
 index.html

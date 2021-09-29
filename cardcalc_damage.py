@@ -70,7 +70,7 @@ def calc_snapshot_damage(damage_events):
             })
 
     # finally sort the new array of snapshotdamage events and return it
-    damage_report = pd.DataFrame(summed_tick_damage, columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'multistrike'])
+    damage_report = pd.DataFrame(summed_tick_damage, columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'directHit'])
     damage_report.sort_values(by='timestamp', inplace=True, ignore_index=True)
     return damage_report
 
@@ -94,7 +94,7 @@ def calc_tick_damage(damage_events):
     # finally sort the new array of snapshotdamage events and return it
     sorted_tick_damage = sorted(instanced_tick_damage, key=lambda tick: tick['timestamp'])
 
-    damage_report = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'multistrike'])
+    damage_report = pd.DataFrame(sorted(sorted_tick_damage + damage_events['rawDamage'], key=lambda tick: tick['timestamp']), columns=['timestamp', 'type', 'sourceID', 'targetID', 'abilityGameID', 'amount', 'hitType', 'directHit'])
 
     return damage_report
 
@@ -104,7 +104,7 @@ corresponding to those this combines them and returns just the raw
 damage events with new timestamps from the preparing snapshot
 """
 def cleanup_prepare_events(damage_events):
-    damages = pd.DataFrame(damage_events['rawDamage'], columns=['type', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID', 'packetID', 'amount', 'hitType', 'multistrike', 'timestamp'])
+    damages = pd.DataFrame(damage_events['rawDamage'], columns=['type', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID', 'packetID', 'amount', 'hitType', 'directHit', 'timestamp'])
     prepares = pd.DataFrame(damage_events['prepDamage'], columns=['timestamp', 'sourceID', 'targetID', 'targetInstance', 'abilityGameID', 'packetID'])
 
     # packetID sorting (for debug purposes)
@@ -130,7 +130,7 @@ def cleanup_prepare_events(damage_events):
     return merged_damage
 
 # this take a raw damage report with snapshot damage already resolved
-# and cleans up the multistrike/hittype data so that each damage entry
+# and cleans up the directHit/hittype data so that each damage entry
 # has one of the following categories:
 #
 # (a.) normal hit - 1
@@ -140,31 +140,31 @@ def cleanup_prepare_events(damage_events):
 # (e.) dot snapshot - 5
 def cleanup_hit_data(damage_report):
     damage_report['hitType'].fillna(value=1.0, inplace=True)
-    damage_report['multistrike'].fillna(value=False, inplace=True)
+    damage_report['directHit'].fillna(value=False, inplace=True)
 
     damage_report.rename(columns = {'hitType': 'hitData'}, inplace=True)
 
     damage_report['hitType'] = damage_report.apply(lambda row: hit_type(row), axis=1)
 
-    damage_report.drop(inplace=True, columns=['hitData', 'multistrike', 'type'])
+    damage_report.drop(inplace=True, columns=['hitData', 'directHit', 'type'])
 
     return damage_report
 
-# normal hits are indicated where hitType is 1 and multistrike is not set
-# direct hits are indicated where hitType is 1 and multistrike is set to true
-# critical hits are indicated where hitTYpe is 2 and multistrike is not set
-# critical direct hits are indicated where hitType is 2 and multistrike is true
+# normal hits are indicated where hitType is 1 and directHit is not set
+# direct hits are indicated where hitType is 1 and directHit is set to true
+# critical hits are indicated where hitTYpe is 2 and directHit is not set
+# critical direct hits are indicated where hitType is 2 and directHit is true
 # finally dots are anything where the type is 'damagesnapshot' and not 'damage' like the above categories
 def hit_type(row):
     if row['type'] == 'damagesnapshot':
         return 'dot'
-    elif row['hitData'] == 1 and row['multistrike'] == False:
+    elif row['hitData'] == 1 and row['directHit'] == False:
         return 'normal'
-    elif row['hitData'] == 1 and row['multistrike'] == True:
+    elif row['hitData'] == 1 and row['directHit'] == True:
         return 'dh'
-    elif row['hitData'] == 2 and row['multistrike'] == False:
+    elif row['hitData'] == 2 and row['directHit'] == False:
         return 'crit'
-    elif row['hitData'] == 2 and row['multistrike'] == True:
+    elif row['hitData'] == 2 and row['directHit'] == True:
         return 'cdh'
     else:
         return 'n/a'
