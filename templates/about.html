@@ -3,9 +3,9 @@
 {% block content %}
 <h1>What is this?</h1>
 
-<p>This is a tool to calculate more optimal targets for Astrologian cards in Final Fantasy XIV. This is broken down into two different searches. The first looking for the optimal target with each window where a card was actually played in the fight ('Card Play' window). The second search looks at possible times between each Draw/Sleeve Draw/Divination where players were doing the most damage during a 15s window ('Card Draw' window).</p>
+<p>This is a tool to calculate more optimal targets for Astrologian cards in Final Fantasy XIV. This is broken down into two different searches. The first looking for the optimal target with each window where a card was actually played in the fight ('Card Play' window). The second search looks at possible times between each Draw cast where players were doing the most damage during a 15s window ('Card Draw' window).</p>
 
-<p><strong>Important note:</strong> this tool currently only works for 5.3 onwards (after the Sleeve Draw changes) although it can be used for previous patches it will not correctly output every card play around Sleeve Draw windows.</p>
+<p><strong>Important note:</strong> This tool is now updated for Endwalker patch 6.0 and will no longer handle previous logs correctly given the changes to Minor Arcana, Divination, and the removal of Sleeve Draw.</p>
 
 <h2>Does it account for...</h2>
 
@@ -15,8 +15,8 @@
     <li>Excludes ticks from DoTs snapshotted before the card window</li>
     <li>Excludes ticks from DoTs snapshotted after the card window</li>
     <li>Includes ticks from DoTs snapshotted inside the card window, including ticks that happen afterward</li>
-    <li>Includes damage from ground effect DoTs (Doton, Salted Earth, Flamethrower, Slipstream, Earthen Fury)</li>
-    <li>Excludes the 3%/4%/6%/8% damage buff from the active card</li>
+    <li>Includes damage from ground effect DoTs (Doton, Salted Earth, Flamethrower, Slipstream)</li>
+    <li>Excludes the 3%/6% damage buff from the active card</li>
     <li>Accounts for the correct melee/ranged bonus associated with the card</li>
     <li>During a 'Card Play' window any targets who already have an active card at the time of cast are ignored for recommendation as the optimal target</li>
     <li>While searching for optimal cards during a 'Card Draw' window all damage from card buffs is ignored</li>
@@ -82,7 +82,6 @@
 
 <p>While searching for the maximum damage output possible to cover with a card play during each potential 'Card Draw' window the following considerations are not taken into account:</p>
 <ul>
-    <li>There is no check for whether you could have held a card past a Divination cast thus you need to separately check the window following Divination to examine for possible card targets there</li>
     <li>Within each draw window there is no consideration for what card you have drawn, what seals you have or need, whether it would be reasonable to redraw for a different role or seal</li>
     <li>No consideration is given to your GCD, weave slots, or potential healing when calculating the initial time for playing cards so it is possible that it would be unreasonable to play a card a specified time</li>
     <li>The search is performed in 1s increments so it is possible that two damage instances which are nearly 15s apart will never end up considered together despite there being a possible card which would cover these. Thus it's possible that the reported play time for maximum damage is incorrect and could be higher if the playtime was shifted by less than a second in either direction</li>
@@ -95,6 +94,7 @@
 <p>Also, additional thanks to the tooltips which are provided through the <a href="https://github.com/xivapi/vue-xivtooltips">Vue-XIVTooltips</a> library.</p>
 
 <h2>Changes</h2>
+<p>2021-12-14: Updates for Endwalker compatibility. With this update this tool is no longer capable of handling older logs properly as it will no longer handle Sleeve Draw, Minor Arcana, or Divination. It now also properly considers Sage as a ranged job and Reaper as a melee job. This was fixed in git commit <a href="https://github.com/meldontaragon/astcardcalc/commit/e68c7b1e00479f48144a0a232af599e011389ca8">e68c7b1</a></p>
 <p>2021-09-29: Fixed an issue where the name for direct hits changed on the FFlogs API so damage attribution to DH% and CDH% was incorrect. This was fixed in git commit <a href="https://github.com/meldontaragon/astcardcalc/commit/27a712962e7ccdd4fd60cf1455233117b8570f06">27a7129</a></p>
 <p>2021-05-08: Fixed the handling of damage snapshots to properly use the prepare event timestamp. This was fixed in git commit <a href="https://github.com/meldontaragon/astcardcalc/commit/8ea9ee3fb76487e36c0741ec41db7e431418b127">8ea9ee3</a></p>
 <p>2021-03-20: Added detailed information tab which contains information about remaining card duration as well as a breakdown of the critical and direct hit rate as well as the percentage of damage from DoTs. This was implemented in git commit <a href="https://github.com/meldontaragon/astcardcalc/commit/2b7ed07c52081d15744e1ba0e5db94c006361c20">2b7ed07</a></p>
