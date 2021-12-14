@@ -22,9 +22,9 @@ class Player:
 
     @staticmethod
     def GetRole(job):
-        if job in {'DarkKnight', 'Gunbreaker', 'Warrior','Paladin', 'Dragoon', 'Samurai', 'Ninja', 'Monk'}:
+        if job in {'DarkKnight', 'Gunbreaker', 'Warrior','Paladin', 'Dragoon', 'Samurai', 'Ninja', 'Monk', 'Reaper'}:
             return 'melee'
-        if job in {'Machinist', 'Dancer', 'Bard', 'WhiteMage', 'Scholar', 'Astrologian', 'Summoner', 'BlackMage', 'RedMage'}:
+        if job in {'Machinist', 'Dancer', 'Bard', 'WhiteMage', 'Scholar', 'Astrologian', 'Summoner', 'BlackMage', 'RedMage', 'Sage'}:
             return 'ranged'
         if job in {'LimitBreak', 'Limit Break'}:
             return 'LimitBreak'
