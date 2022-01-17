@@ -15,7 +15,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-LAST_CALC_DATE = datetime.fromtimestamp(1639499860)
+LAST_CALC_DATE = datetime.fromtimestamp(1642454356)
 
 token = get_bearer_token()
 
