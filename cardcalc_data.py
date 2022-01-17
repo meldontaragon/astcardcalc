@@ -150,8 +150,6 @@ class CardPlay:
             return 0
         elif buffId != 0:
             return {
-                1001876: 7444,
-                1001877: 7445,
                 1001882: 4401,
                 1001883: 4404,
                 1001884: 4402,
@@ -162,8 +160,6 @@ class CardPlay:
             } [buffId]
         elif castId != 0:
             return {
-                7444: 1001876,
-                7445: 1001877,
                 4401: 1001882,
                 4404: 1001883,
                 4402: 1001884,
@@ -179,8 +175,6 @@ class CardPlay:
     def GetName(buffId, castId = 0):
         if buffId == 0 or castId != 0:
             return {
-                7445: 'Lord of Crowns',
-                7444: 'Lady of Crowns',
                 4401: 'The Balance',
                 4402: 'The Arrow',
                 4403: 'The Spear',
@@ -191,8 +185,6 @@ class CardPlay:
             } [castId]
         else:
             return {
-                1001876: 'Lord of Crowns',
-                1001877: 'Lady of Crowns',
                 1001882: 'The Balance',
                 1001884: 'The Arrow',
                 1001885: 'The Spear',
@@ -205,8 +197,6 @@ class CardPlay:
     @staticmethod
     def GetRole(id):
         return {
-            1001876: 'melee',
-            1001877: 'ranged',
             1001882: 'melee',
             1001884: 'melee',
             1001885: 'melee',
@@ -219,8 +209,6 @@ class CardPlay:
     @staticmethod
     def GetBonus(id):
         return {
-            1001876: 1.08,
-            1001877: 1.08,
             1001882: 1.06,
             1001884: 1.06,
             1001885: 1.06,
@@ -289,8 +277,7 @@ class DrawWindow:
             0: 'Fight Start',
             3590: 'Draw',
             16552: 'Divination',
-            7448: 'Sleeve Draw',
-            3593: 'Redraw',
+            3593: 'Redraw', # TODO: Need to check if this is still the correct ID for Redraw
         }[id]
 
     @staticmethod

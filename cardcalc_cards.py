@@ -26,8 +26,6 @@ from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_b
 For the initial version of this the following simple rules are use.
 Every event starts with one of the following and ends with the same:
  (1) Draw
- (2) Sleeve Draw
- (3) Divination
 Redraws and plays are ignored
 """
 def _handle_draw_events(card_events, start_time, end_time):
@@ -40,9 +38,9 @@ def _handle_draw_events(card_events, start_time, end_time):
     # otherwise 
 
     for event in card_events:
-        # check if cast and if it's draw/sleeve/div
+        # check if cast and draw
         # print(" >>> event: {} id: {} timestamp: {} time: {}".format(event['type'], event['abilityGameID'], event['timestamp'], str(timedelta(milliseconds=(event['timestamp']-start_time)))[2:11]))
-        if event['type'] == 'cast' and event['abilityGameID'] in [3590, 16552, 7448]:
+        if event['type'] == 'cast' and event['abilityGameID'] in [3590]:
             # if event is attached to active window then just update that information
             if active_window.start == event['timestamp']:
                 active_window.castId = event['abilityGameID']
@@ -87,25 +85,6 @@ def _handle_draw_events(card_events, start_time, end_time):
             if active_window.start == event['timestamp']:
                 active_window.buffId = event['abilityGameID']
                 active_window.cardDrawn = DrawWindow.GetCard(active_window.buffId)
-            ####
-            ## TODO: need to figure out how to handle event closing properly
-            ## as this currently includes redraws which isn't quite what I want
-            ## so for now the code just can't handle old sleevedraw yet
-            ##
-            ## the best way to handle is probably to find the sleevedraw buff
-            ## event and use that to split up the draw windows
-            ####
-
-            # otherwise close out the old active window and make a new one
-            # else:
-            #     if active_window.startId == 0:
-            #         active_window.source = event['sourceID']
-            #     active_window.end = event['timestamp']
-            #     active_window.endEvent = DrawWindow.GetBuff(event['abilityGameID'])
-            #     active_window.endId = DrawWindow.ConvertID(event['abilityGameID'])
-            #     # print("Closing EVENT at {}".format(str(timedelta(milliseconds=(event['timestamp']-start_time)))[2:11]))
-            #     draw_windows.append(active_window)
-            #     active_window = DrawWindow(start = event['timestamp'], source = event['sourceID'], buffId = event['abilityGameID'])
 
             # search for previously handled draw windows without an attached buff and update them
             draw_set = [draw
@@ -150,6 +129,7 @@ def _handle_play_events(card_events, start_time, end_time):
                 # if there is no associated cast event then use the buff time as the cast time
                 cards.append(CardPlay(cast = event['timestamp'], start = event['timestamp'], end = None, source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
         # If removing the buff, add an end timestamp to the matching application
+        # TODO: need to check for overwritten cards to both warn about these and properly calculate the damage separately for what could have been covered by the full 15s window
         elif event['type'] == 'removebuff':
             card_set = [card
                       for card in cards
@@ -163,7 +143,8 @@ def _handle_play_events(card_events, start_time, end_time):
                 cards.append(CardPlay(cast = max(event['timestamp'] - 15000, start_time), start = max(event['timestamp'] - 15000, start_time), end = event['timestamp'], source = event['sourceID'], target = event['targetID'], buffId = event['abilityGameID']))
         # special case for refresh buff which is treated like both apply and remove at the same time
         elif event['type'] == 'refreshbuff':
-            # first clean up the end event 
+            # TODO: need to cleanup div/sleeve handling here as it's obsolete
+            # first clean up the sleeve/divend event 
             card_set = [card
                       for card in cards
                       if card.target == event['targetID'] and card.source == event['sourceID'] and card.buffId == event['abilityGameID'] and card.end is None]
@@ -476,7 +457,6 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
     if not ranged_draw_damage_table.empty:
         ranged_draw_damage_table.set_index('id', inplace=True, drop=False)
         ranged_draw_damage_table.sort_values(by='damage', inplace=True, ascending=False)
-
 
     return (melee_draw_damage_table, ranged_draw_damage_table)
 

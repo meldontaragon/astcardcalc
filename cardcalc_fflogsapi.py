@@ -34,10 +34,11 @@ def _event_priority(event):
         'refreshbuff': 5,
         'refreshdebuff': 6,
         'removedebuff': 7,
-        'removebuff': 8,
-        'removebuffstack': 9,
-        'damage': 10,
-        'damagesnapshot': 11,
+        'removedebuffstack': 8,
+        'removebuff': 9,
+        'removebuffstack': 10,
+        'damage': 11,
+        'damagesnapshot': 12,
     }[event]
 
 # used to obtain a bearer token from the fflogs api
