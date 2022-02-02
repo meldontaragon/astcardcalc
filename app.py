@@ -92,7 +92,7 @@ def favicon():
 def calc(report_id, fight_id):
     """The actual calculated results view"""
     # Very light validation, more for the db query than for the user
-    if len(report_id) != 16:
+    if ( len(report_id) < 14 or len(report_id) > 22 ):
         return redirect(url_for('homepage'))
 
     # TODO: Fix this
