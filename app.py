@@ -20,7 +20,7 @@ LAST_CALC_DATE = datetime.fromtimestamp(1642454356)
 token = get_bearer_token()
 
 class Report(db.Model):
-    report_id = db.Column(db.String(16), primary_key=True)
+    report_id = db.Column(db.String(18), primary_key=True)
     fight_id = db.Column(db.Integer, primary_key=True)
     results = db.Column(db.JSON)
     actors = db.Column(db.JSON)
