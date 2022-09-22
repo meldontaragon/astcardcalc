@@ -15,12 +15,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-LAST_CALC_DATE = datetime.fromtimestamp(1642454356)
+LAST_CALC_DATE = datetime.fromtimestamp(1663886556)
 
 token = get_bearer_token()
 
 class Report(db.Model):
-    report_id = db.Column(db.String(18), primary_key=True)
+    report_id = db.Column(db.String(22), primary_key=True)
     fight_id = db.Column(db.Integer, primary_key=True)
     results = db.Column(db.JSON)
     actors = db.Column(db.JSON)
@@ -41,7 +41,6 @@ def increment_count(db):
         count.total_reports = count.total_reports + 1
     except:
         print('Count db error')
-        print(os.path.dirname(os.path.realpath(__file__)))
         count = Count(count_id = 1, total_reports = 1)
         db.session.add(count)
     db.session.commit()
@@ -76,13 +75,14 @@ def about():
         count = Count.query.get(1)
     except:
         print('Count db error.')
-        print(os.path.dirname(os.path.realpath(__file__)))        
         # db.create_all()
         # db.session.add(count)
         # db.session.commit()
         count = Count(count_id = 1, total_reports = 1)
-
-    return render_template('about.html', report_count=count.total_reports)
+    # value pre-full database reset
+    prev_report_count = 14140
+    total_count = count.total_reports + prev_report_count
+    return render_template('about.html', report_count=total_count)
 
 @app.route('/favicon.ico')
 def favicon():
