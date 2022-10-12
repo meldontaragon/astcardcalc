@@ -4,6 +4,8 @@ from urllib.parse import urlparse, parse_qs
 
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
 
+print(os.environ)
+
 from cardcalc_fflogsapi import decompose_url, get_bearer_token
 from cardcalc_data import  CardCalcException
 from cardcalc_cards import cardcalc

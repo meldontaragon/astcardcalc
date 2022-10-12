@@ -1,3 +1,7 @@
 runtime: python39
 
 entrypoint: gunicorn -b :$PORT -w 2 main:app
+
+includes:
+  - env_variables.yaml
+  

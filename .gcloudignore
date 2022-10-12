@@ -18,8 +18,10 @@ sample/
 sample/*
 profiling/*
 
-# local env
+#env vars
+env_variables.yaml
 .exports
+local-test.sh
 
 # backup files
 *~

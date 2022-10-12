@@ -6,6 +6,9 @@ sample/*
 profiling/*
 
 .exports
+env_variables.yaml
+local-test.sh
+
 index.html
 
 *~

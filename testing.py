@@ -97,63 +97,9 @@ def run_compute_total_damage(url, token):
     # damage = compute_total_damage(damage_report, fight_info.start, fight_info.end, actors)
     search_burst_window(damage_report, SearchWindow(fight_info.start, fight_info.end, 15000, 1000), actors)
 
-###########################################################
+# url = 'https://www.fflogs.com/reports/MWckrthRJ4ZmpK6v#fight=last'
+# token = get_bearer_token()
 
-# url = 'https://www.fflogs.com/reports/jtWfFhBLY1g9xbT8#fight=6&type=damage-done'
-#url = 'https://www.fflogs.com/reports/AjQNTarn41bMXvDd#fight=1&type=damage-done'
-url = 'https://www.fflogs.com/reports/MWckrthRJ4ZmpK6v#fight=last'
-token = get_bearer_token()
+# run_compute_total_damage(url, token)
 
-run_compute_total_damage(url, token)
-
-# sort_options = 'time'
-# # sort_options = 'cumulative'
-
-# output_options = 'cardcalc_'
-# file_base = 'profile_snapshot_changes_{}.out'
-
-
-# for i in range(0,10):
-#     print('Running #{}'.format(i))
-#     filename = file_base.format(i)
-#     run_profile(url, token, filename)
-
-# filename = file_base.format(0)
-# stats = pstats.Stats(filename)
-# for i in range(1,10):
-#     filename = file_base.format(i)
-#     stats.add(filename)
-
-# stats.strip_dirs()
-# stats.sort_stats(sort_options)
-# stats.print_stats(output_options, 20)
-
-# def generate_sample_df():
-#     tmp_dict = [
-#         {
-#             'time': 1,
-#             'a': 5,
-#             'b': 3,
-#             'c': 10,},
-#         {
-#             'time': 2,
-#             'a': 12,
-#             'b': 129,
-#             'c': 92,},
-#         {
-#             'time': 3,
-#             'a': 12,
-#             'b': 9,
-#             'c': 0,}
-#     ]
-#     df =  pd.DataFrame(tmp_dict)
-#     df.set_index('time', inplace=True, drop=True)
-#     return df
-
-# df = generate_sample_df()
-# print(df.unstack())
-# print(df.unstack().tolist())
-
-# sorted_list = sorted(df.unstack().to_dict().items(), key=lambda x: x[1])
-# for a in sorted_list:
-#     print(a)
+print(os.environ)
