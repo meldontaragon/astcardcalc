@@ -3,46 +3,21 @@ import os
 from urllib.parse import urlparse, parse_qs
 
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy.exc import IntegrityError
 
 from cardcalc_fflogsapi import decompose_url, get_bearer_token
 from cardcalc_data import  CardCalcException
 from cardcalc_cards import cardcalc
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] =  os.environ['DATABASE_URL']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
 LAST_CALC_DATE = datetime.fromtimestamp(1663886556)
 
 token = get_bearer_token()
 
-class Report(db.Model):
-    report_id = db.Column(db.String(22), primary_key=True)
-    fight_id = db.Column(db.Integer, primary_key=True)
-    results = db.Column(db.JSON)
-    actors = db.Column(db.JSON)
-    enc_name = db.Column(db.String(64))
-    enc_time = db.Column(db.String(9))
-    enc_kill = db.Column(db.Boolean)
-    computed = db.Column(db.DateTime, server_default=db.func.now())
-
-class Count(db.Model):
-    count_id = db.Column(db.Integer, primary_key=True)
-    total_reports = db.Column(db.Integer)
-
 def increment_count(db):
     count = Count.query.get(1)
 
-    # TODO: Fix this
-    try:
-        count.total_reports = count.total_reports + 1
-    except:
-        print('Count db error')
-        count = Count(count_id = 1, total_reports = 1)
-        db.session.add(count)
+    count.total_reports = count.total_reports + 1
     db.session.commit()
 
 def prune_reports(db):
