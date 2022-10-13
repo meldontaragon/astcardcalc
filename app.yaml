@@ -1,6 +1,6 @@
 runtime: python39
 
-instance-class: F4
+instance_class: F4
 
 entrypoint: gunicorn -b :$PORT -w 4 main:app
 
