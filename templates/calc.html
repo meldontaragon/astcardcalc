@@ -9,7 +9,7 @@
         </div>
     </div>
     
-    {% for result in report['results'].values() %}
+    {% for result in report['results'] %}
     <div class="tabset">
         <input 
             type="radio" 
@@ -50,11 +50,11 @@
                     <div class="row result-row mb-2 p-2">
                     <div class="col">
                         <p>
-                            <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
+                            <span class="badge badge-secondary">{{ report['actors'][result['cardSource']]['name'] }}</span>
                             played
                             <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
                             on
-                            <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
+                            <span class="badge badge-secondary">{{ report['actors'][result['cardTarget']]['name'] }}</span>
                             at
                             <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
@@ -83,10 +83,10 @@
                                 </thead>
                                 <tbody>
                                     {% for damage in result['cardDamageTable'] %}
-                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                    {% if report['actors'][damage['id']]['role'] != 'LimitBreak' %}
                                         <tr>
-                                            <td>{{ actors[damage['id']]['name'] }}</td>
-                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['name'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['job'] }}</td>
                                             <td>{{ damage['adjustedDamage'] }}</td>
                                             <td>{{ damage['realDamage'] }}</td>
                                             <td>{% if damage['hasCard'] %}✔{% endif %}</td>
@@ -113,11 +113,11 @@
                     <div class="row result-row mb-2 p-2">
                     <div class="col">
                         <p>
-                            <span class="badge badge-secondary">{{ actors[result['cardSource']]['name'] }}</span>
+                            <span class="badge badge-secondary">{{ report['actors'][result['cardSource']]['name'] }}</span>
                             played 
                             <span><ActionFetch name="{{ result['cardPlayed'] }}" :id="{{ result['cardId'] }}" /></span>
                             on
-                            <span class="badge badge-secondary">{{ actors[result['cardTarget']]['name'] }}</span>
+                            <span class="badge badge-secondary">{{ report['actors'][result['cardTarget']]['name'] }}</span>
                             at
                             <span class="badge badge-secondary">{{ result.cardPlayTime }}</span>
                         </p>
@@ -157,10 +157,10 @@
                                 </thead>
                                 <tbody>
                                     {% for damage in result['cardDamageTable'] %}
-                                    {% if actors[damage['id']]['role'] != 'LimitBreak' %}
+                                    {% if report['actors'][damage['id']]['role'] != 'LimitBreak' %}
                                         <tr>
-                                            <td>{{ actors[damage['id']]['name'] }}</td>
-                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['name'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['job'] }}</td>
                                             <td>{{ damage['adjustedDamage'] }}</td>
                                             <td>{{ damage['realDamage'] }}</td>
                                             <td>{% if damage['hasCard'] %}{{ damage['remaining'] }}s{% endif %}</td>
@@ -225,11 +225,11 @@
                                     </thead>
                                     <tbody>
                                         {% for damage in result['drawDamageTableMelee'] %}
-                                        {% if actors[damage['id']]['role'] == 'melee' %}
+                                        {% if report['actors'][damage['id']]['role'] == 'melee' %}
                                         <tr>
                                             <td>{{ damage['time'] }}</td>
-                                            <td>{{ actors[damage['id']]['name'] }}</td>
-                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['name'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['job'] }}</td>
                                             <td>{{ damage['damage'] }}</td>
                                         </tr>
                                         {% endif %}
@@ -282,11 +282,11 @@
                                     </thead>
                                     <tbody>
                                         {% for damage in result['drawDamageTableRanged'] %}
-                                        {% if actors[damage['id']]['role'] == 'ranged' %}
+                                        {% if report['actors'][damage['id']]['role'] == 'ranged' %}
                                         <tr>
                                             <td>{{ damage['time'] }}</td>
-                                            <td>{{ actors[damage['id']]['name'] }}</td>
-                                            <td>{{ actors[damage['id']]['job'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['name'] }}</td>
+                                            <td>{{ report['actors'][damage['id']]['job'] }}</td>
                                             <td>{{ damage['damage'] }}</td>
                                         </tr>
                                         {% endif %}

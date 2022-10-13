@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 import json
+from collections import OrderedDict
 from urllib.parse import urlparse, parse_qs
 
 from flask import Flask, render_template, request, redirect, send_from_directory, url_for
@@ -157,7 +158,7 @@ ORDER BY computed DESC;
             report = {
                 'report_id': report_id,
                 'fight_id': fight_id,
-                'results': results, 
+                'results': results,
                 'actors': actors,
                 'enc_name': encounter_info['enc_name'],
                 'enc_time': encounter_info['enc_time'],
@@ -167,5 +168,9 @@ ORDER BY computed DESC;
             row_result = client.insert_rows_json(Reports, [sql_report])
             print(row_result)
     
+    report['results'] = {int(k):v for k,v in report['results'].items()}
+    report['actors'] = {int(k):v for k,v in report['actors'].items()}
+
+    report['results'] = list( OrderedDict(sorted(report['results'].items())).values())
     actors = {int(k):v for k,v in report['actors'].items()}
-    return render_template('calc.html', report=report, actors=actors)
+    return render_template('calc.html', report=report)
