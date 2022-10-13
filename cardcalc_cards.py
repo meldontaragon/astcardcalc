@@ -460,7 +460,7 @@ def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration
 
     return (melee_draw_damage_table, ranged_draw_damage_table)
 
-def cardcalc(report, fight_id, token):
+def cardcalc(report, fight_id, token) -> FightInfo:
     """
     Reads an FFLogs report and solves for optimal Card Usage
     """
@@ -524,7 +524,7 @@ def cardcalc(report, fight_id, token):
     #      (g) correct target in play window
     #      (h) card played
 
-    cardcalc_data = []
+    cardcalc_data = {}
     count = 0
     for draw in draws:
         count += 1
@@ -589,7 +589,7 @@ def cardcalc(report, fight_id, token):
         # finally combine the two sets of data and append it to the collection
         # of data for each draw window/card play
         combined_data = card_draw_data | card_play_data
-        cardcalc_data.append(combined_data)
+        cardcalc_data[count] = combined_data
 
     encounter_info = {
         'enc_name': fight_info.name,

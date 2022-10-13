@@ -3,13 +3,13 @@
 {% block content %}
     <div class="row">
         <div class="card mb-4 p-2">
-            <h5 class="card-title {% if report.enc_kill %}text-success{% else %}text-danger{% endif %}">{{ report.enc_name }}</h5>
-            <h6 class="card-subtitle mb-2">{{ report.enc_time }}</h6>
-            <a class="card-link" href="https://www.fflogs.com/reports/{{ report.report_id}}#fight={{ report.fight_id }}">Original log</a>
+            <h5 class="card-title {% if report['enc_kill'] %}text-success{% else %}text-danger{% endif %}">{{ report['enc_name'] }}</h5>
+            <h6 class="card-subtitle mb-2">{{ report['enc_time'] }}</h6>
+            <a class="card-link" href="https://www.fflogs.com/reports/{{ report['report_id']}}#fight={{ report['fight_id'] }}">Original log</a>
         </div>
     </div>
     
-    {% for result in report.results %}
+    {% for result in report['results'].values() %}
     <div class="tabset">
         <input 
             type="radio" 
@@ -46,7 +46,7 @@
             <section>
                 <h2>Card Play</h2>
                 <div class="content">
-                    {% if result.cardPlayed != 'None' %}
+                    {% if result['cardPlayed'] != 'None' %}
                     <div class="row result-row mb-2 p-2">
                     <div class="col">
                         <p>
