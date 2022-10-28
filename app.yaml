@@ -1,8 +1,8 @@
 runtime: python39
 
-instance_class: F1
+instance_class: F2
 
-entrypoint: gunicorn -b :$PORT -w 1 main:app
+entrypoint: gunicorn -b :$PORT -w 2 main:app
 
 includes:
   - env_variables.yaml
