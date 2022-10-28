@@ -352,7 +352,7 @@ def _get_active_card(cards, draw):
             break
     return active_cards
 
-def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info, actors):
+def _handle_draw_play_damage(draw_window_damage_collection, draw_window_duration, fight_info, actors) -> tuple[pd.DataFrame, pd.DataFrame]:
     melee_draw_damage = []
     ranged_draw_damage = []
 

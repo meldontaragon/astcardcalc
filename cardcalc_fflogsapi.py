@@ -82,10 +82,14 @@ query reportData($code: String!) {
     data = call_fflogs_api(query, variables, token)
     return data['data']['reportData']['report']['fights'][-1]['id']
 
-def decompose_url(url, token):
+def decompose_url(url, token) -> tuple[str, int]:
     parts = urlparse(url)
 
-    report_id = [segment for segment in parts.path.split('/') if segment][-1]
+    try:
+        report_id = [segment for segment in parts.path.split('/') if segment][-1]
+    except IndexError:
+        raise CardCalcException("Invalid URL: {}".format(url))
+
     try:
         fight_id = parse_qs(parts.fragment)['fight'][0]
     except KeyError:

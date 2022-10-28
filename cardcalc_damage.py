@@ -144,7 +144,7 @@ def cleanup_hit_data(damage_report):
 
     damage_report.rename(columns = {'hitType': 'hitData'}, inplace=True)
 
-    damage_report['hitType'] = damage_report.apply(lambda row: hit_type(row), axis=1)
+    damage_report['hitType'] = damage_report.apply(lambda row: hit_type(row), axis=1) ## TODO: optimize
 
     damage_report.drop(inplace=True, columns=['hitData', 'directHit', 'type'])
 
@@ -201,15 +201,22 @@ def compute_total_damage(damage_report,
                          end_time: int, 
                          actors: ActorList,
                          detailedInfo: bool = False):
+    
+    ###
+    ### TODO: this function is likely the whole computational time
+    ### of this project right now so any work to optimize this will
+    ### greatly aid the performance of this project
+    ###
+
     combined_damage = {}
     hit_details = {}
 
     # create a dataframe with only the current time window
-    current_df = damage_report.loc[lambda df: (df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)]
+    current_df = damage_report.loc[lambda df: (df['timestamp'] >= start_time) & (df['timestamp'] <= end_time)] ## TODO: optimize
 
     # for each unique actor present, sum the damage done during this time frame
     for actor in current_df['sourceID'].unique():
-        combined_damage[actor] = current_df.loc[lambda df: df['sourceID'] == actor, 'amount'].sum()
+        combined_damage[actor] = current_df.loc[lambda df: df['sourceID'] == actor, 'amount'].sum() ## TODO: optimize
 
     # get detailed info on crit/dh rates and percentage of damage from dots
     if detailedInfo:
@@ -288,11 +295,7 @@ step_size: step_size for the search (in milliseconds)
 def search_burst_window(damage_report, 
                         search_window: SearchWindow, 
                         actors: ActorList):
-    ###
-    ### TODO: this function is likely the whole computational time
-    ### of this project right now so any work to optimize this will
-    ### greatly aid the performance of this project
-    ###
+
     # start searching at the start
     interval_start = search_window.start
     interval_end = interval_start + search_window.duration
