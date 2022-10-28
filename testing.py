@@ -19,6 +19,7 @@ from cardcalc_damage import search_burst_window, calc_snapshot_damage, calc_tick
 
 from cardcalc_cards import cardcalc
 
+
 def testing_damage_report(url, token):
     report_id, fight_id = decompose_url(url, token)
     fight_info = get_fight_info(report_id, fight_id, token)
@@ -28,25 +29,29 @@ def testing_damage_report(url, token):
 
     damage_report = calc_snapshot_damage(damage_data)
     damage_report = cleanup_hit_data(damage_report)
-    
+
     return damage_report
+
 
 def run_card_calc(url, token):
     report_id, fight_id = decompose_url(url, token)
     cardcalc_data, actors, _ = cardcalc(report_id, fight_id, token)
-    
+
     return cardcalc_data, actors
+
 
 def run_profile(url, token, filename):
     profile.run('run_card_calc(url, token)', filename)
     profile.run('run_compute_total_damage(url, token)', filename+'_totdmg')
 
-def read_stats(filename, sort_options = 'tottime', print_options = 'cardcalc_'):
+
+def read_stats(filename, sort_options='tottime', print_options='cardcalc_'):
     stats = pstats.Stats(filename)
     stats.strip_dirs()
 
     stats.sort_stats(sort_options)
     stats.print_stats(print_options, 100)
+
 
 def run_compute_total_damage(url, token):
     report_id, fight_id = decompose_url(url, token)
@@ -55,14 +60,15 @@ def run_compute_total_damage(url, token):
     damage_events = get_damage_events(fight_info, token)
     damage_report = calc_snapshot_damage(damage_events)
 
-    #print(damage_events['tickDamage'])
+    # print(damage_events['tickDamage'])
     for event in damage_events['tickDamage']:
         if event['type'] == 'removedebuffstack':
             print(event)
 
-
     # damage = compute_total_damage(damage_report, fight_info.start, fight_info.end, actors)
-    search_burst_window(damage_report, SearchWindow(fight_info.start, fight_info.end, 15000, 1000), actors)
+    search_burst_window(damage_report, SearchWindow(
+        fight_info.start, fight_info.end, 15000, 1000), actors)
+
 
 url = 'https://www.fflogs.com/reports/MWckrthRJ4ZmpK6v#fight=last'
 token = get_bearer_token()

@@ -25,6 +25,8 @@ FFLOGS_URL = 'https://www.fflogs.com/api/v2/client'
 client = GraphqlClient(FFLOGS_URL)
 
 # this is used to handle sorting events
+
+
 def _event_priority(event):
     return {
         'applybuff': 1,
@@ -42,15 +44,20 @@ def _event_priority(event):
     }[event]
 
 # used to obtain a bearer token from the fflogs api
+
+
 def get_bearer_token():
     token_client = BackendApplicationClient(client_id=FFLOGS_CLIENT_ID)
-    
+
     oauth = OAuth2Session(client=token_client)
-    token = oauth.fetch_token(token_url=FFLOGS_OAUTH_URL, client_id=FFLOGS_CLIENT_ID, client_secret=FFLOGS_CLIENT_SECRET)
+    token = oauth.fetch_token(token_url=FFLOGS_OAUTH_URL,
+                              client_id=FFLOGS_CLIENT_ID, client_secret=FFLOGS_CLIENT_SECRET)
     return token
 
 # make a request for the data defined in query given a set of
 # variables
+
+
 def call_fflogs_api(query, variables, token):
     headers = {
         'Content-TYpe': 'application/json',
@@ -59,6 +66,7 @@ def call_fflogs_api(query, variables, token):
     data = client.execute(query=query, variables=variables, headers=headers)
 
     return data
+
 
 def get_last_fight(report, token):
     variables = {
@@ -82,11 +90,13 @@ query reportData($code: String!) {
     data = call_fflogs_api(query, variables, token)
     return data['data']['reportData']['report']['fights'][-1]['id']
 
+
 def decompose_url(url, token) -> tuple[str, int]:
     parts = urlparse(url)
 
     try:
-        report_id = [segment for segment in parts.path.split('/') if segment][-1]
+        report_id = [segment for segment in parts.path.split(
+            '/') if segment][-1]
     except IndexError:
         raise CardCalcException("Invalid URL: {}".format(url))
 
@@ -94,12 +104,13 @@ def decompose_url(url, token) -> tuple[str, int]:
         fight_id = parse_qs(parts.fragment)['fight'][0]
     except KeyError:
         raise CardCalcException("Fight ID is required. Select a fight first")
-    
+
     if fight_id == 'last':
         fight_id = get_last_fight(report_id, token)
     fight_id = int(fight_id)
 
     return report_id, fight_id
+
 
 def get_fight_info(report, fight, token):
     variables = {
@@ -126,15 +137,16 @@ query reportData($code: String!) {
     for f in fights:
         if f['id'] == fight:
             return FightInfo(report_id=report, fight_number=f['id'], start_time=f['startTime'], end_time=f['endTime'], name=f['name'], kill=f['kill'])
-        
+
     raise CardCalcException("Fight ID not found in report")
+
 
 def get_actor_lists(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
         'startTime': fight_info.start,
         'endTime': fight_info.end,
-    }    
+    }
     query = """
 query reportData($code: String!, $startTime: Float!, $endTime: Float) {
     reportData {
@@ -172,6 +184,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float) {
 
     return ActorList(players, pets)
 
+
 def get_card_play_events(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
@@ -199,6 +212,7 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
 
     return card_events
 
+
 def get_card_draw_events(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
@@ -223,8 +237,9 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
 
     data = call_fflogs_api(query, variables, token)
     card_events = data['data']['reportData']['report']['draws']['data']
-    
+
     return card_events
+
 
 """
 Get the collection of damage events from FFLogs for a fight 
@@ -234,6 +249,8 @@ Returns dictionary of damage events with three sections:
 - rawDamage: the actual damage events for non-tick damage
 - tickDamage: buff/debuff events and damage events for tick damage
 """
+
+
 def get_damage_events(fight_info: FightInfo, token):
     variables = {
         'code': fight_info.id,
@@ -301,11 +318,12 @@ query reportData($code: String!, $startTime: Float!, $endTime: Float!) {
     prep_damages = data['data']['reportData']['report']['damagePrep']['data']
     base_damages = data['data']['reportData']['report']['damage']['data']
 
-    tick_damages = data['data']['reportData']['report']['tickDamage']    ['data']
+    tick_damages = data['data']['reportData']['report']['tickDamage']['data']
     tick_events = data['data']['reportData']['report']['tickEvents']['data']
     ground_events = data['data']['reportData']['report']['groundEvents']['data']
 
-    combined_tick_events = sorted((tick_damages + tick_events + ground_events), key=lambda tick: (tick['timestamp'], _event_priority(tick['type'])))
+    combined_tick_events = sorted((tick_damages + tick_events + ground_events),
+                                  key=lambda tick: (tick['timestamp'], _event_priority(tick['type'])))
 
     damage_events = {
         'rawDamage': base_damages,

@@ -1,8 +1,10 @@
 from datetime import timedelta
 import pandas as pd
 
+
 class CardCalcException(Exception):
     pass
+
 
 class Player:
     def __init__(self, id, name, job):
@@ -22,13 +24,14 @@ class Player:
 
     @staticmethod
     def GetRole(job):
-        if job in {'DarkKnight', 'Gunbreaker', 'Warrior','Paladin', 'Dragoon', 'Samurai', 'Ninja', 'Monk', 'Reaper'}:
+        if job in {'DarkKnight', 'Gunbreaker', 'Warrior', 'Paladin', 'Dragoon', 'Samurai', 'Ninja', 'Monk', 'Reaper'}:
             return 'melee'
         if job in {'Machinist', 'Dancer', 'Bard', 'WhiteMage', 'Scholar', 'Astrologian', 'Summoner', 'BlackMage', 'RedMage', 'Sage'}:
             return 'ranged'
         if job in {'LimitBreak', 'Limit Break'}:
             return 'LimitBreak'
         return 'n/a'
+
 
 class Pet:
     def __init__(self, id, name, owner):
@@ -45,6 +48,7 @@ class Pet:
             'owner': self.owner
         }
 
+
 class ActorList:
     def __init__(self, players: dict, pets: dict):
         self.players = players
@@ -53,10 +57,10 @@ class ActorList:
         actors = []
         for _, player in players.items():
             actors.append(player.to_dict())
-        
+
         for _, pet in pets.items():
             actors.append(pet.to_dict())
-        
+
         self.actors = pd.DataFrame(actors)
         self.actors.set_index('id', drop=False, inplace=True)
 
@@ -66,14 +70,14 @@ class ActorList:
     def PrintAll(self):
         tabular = '{:<24}{:>4}  {}'
         print('Players')
-        print(tabular.format('Name','ID','Job'))
+        print(tabular.format('Name', 'ID', 'Job'))
         print('-'*40)
         for _, p in self.players.items():
             print(tabular.format(p.name, p.id, p.job))
 
         print('\n')
         print('Pets')
-        print(tabular.format('Name','ID','Owner'))
+        print(tabular.format('Name', 'ID', 'Owner'))
         print('-'*40)
         for _, p in self.pets.items():
             print(tabular.format(p.name, p.id, self.players[p.owner].name))
@@ -81,7 +85,7 @@ class ActorList:
     def PrintPlayers(self):
         tabular = '{:<24}{:>4}  {}'
         print('Players')
-        print(tabular.format('Name','ID','Job'))
+        print(tabular.format('Name', 'ID', 'Job'))
         print('-'*40)
         for _, p in self.players.items():
             print(tabular.format(p.name, p.id, p.job))
@@ -89,10 +93,11 @@ class ActorList:
     def PrintPets(self):
         tabular = '{:<24}{:>4}  {:>5}  {}'
         print('Pets')
-        print(tabular.format('Name','ID','OID','Owner'))
+        print(tabular.format('Name', 'ID', 'OID', 'Owner'))
         print('-'*40)
         for _, p in self.pets.items():
-            print(tabular.format(p.name, p.id, p.owner, self.players[p.owner].name))
+            print(tabular.format(p.name, p.id,
+                  p.owner, self.players[p.owner].name))
 
     def GetPlayerID(self, name):
         for i, p in self.players.items():
@@ -100,8 +105,9 @@ class ActorList:
                 return i
         return -1
 
+
 class CardPlay:
-    def __init__(self, cast: int = 0, start: int = 0, end: int = 0, source: int = 0, target: int = 0, buffId: int = 0, castId: int = 0):        
+    def __init__(self, cast: int = 0, start: int = 0, end: int = 0, source: int = 0, target: int = 0, buffId: int = 0, castId: int = 0):
         self.cast = cast
         self.start = start
         self.end = end
@@ -110,10 +116,10 @@ class CardPlay:
 
         if buffId != 0:
             self.buffId = buffId
-            self.castId = CardPlay.ConvertID(buffId = buffId)
+            self.castId = CardPlay.ConvertID(buffId=buffId)
         elif castId != 0:
             self.castId = castId
-            self.buffId = CardPlay.ConvertID(castId = castId)
+            self.buffId = CardPlay.ConvertID(castId=castId)
         else:
             self.buffId = buffId
             self.castId = castId
@@ -127,7 +133,7 @@ class CardPlay:
     def __str__(self):
         return f'{self.source} played {self.name} on {self.target} at {self.start}'
 
-    def to_dict(self): 
+    def to_dict(self):
         return {
             'source': self.source,
             'target': self.target,
@@ -145,7 +151,7 @@ class CardPlay:
         return '{} played {} on {} at {}'.format(player_list[self.source]['name'], self.name, player_list[self.target]['name'], str(timedelta(milliseconds=(self.start-start_time)))[2:11])
 
     @staticmethod
-    def ConvertID(buffId = 0, castId = 0):
+    def ConvertID(buffId=0, castId=0):
         if buffId == 0 and castId == 0:
             return 0
         elif buffId != 0:
@@ -157,7 +163,7 @@ class CardPlay:
                 1001886: 4405,
                 1001887: 4406,
                 0: 'None',
-            } [buffId]
+            }[buffId]
         elif castId != 0:
             return {
                 4401: 1001882,
@@ -167,12 +173,12 @@ class CardPlay:
                 4405: 1001886,
                 4406: 1001887,
                 0: 'None',
-            } [castId] 
+            }[castId]
         else:
             return 0
 
     @staticmethod
-    def GetName(buffId, castId = 0):
+    def GetName(buffId, castId=0):
         if buffId == 0 or castId != 0:
             return {
                 4401: 'The Balance',
@@ -182,7 +188,7 @@ class CardPlay:
                 4405: 'The Ewer',
                 4406: 'The Spire',
                 0: 'None',
-            } [castId]
+            }[castId]
         else:
             return {
                 1001882: 'The Balance',
@@ -192,7 +198,7 @@ class CardPlay:
                 1001886: 'The Ewer',
                 1001887: 'The Spire',
                 0: 'None',
-            } [buffId]
+            }[buffId]
 
     @staticmethod
     def GetRole(id):
@@ -204,7 +210,7 @@ class CardPlay:
             1001886: 'ranged',
             1001887: 'ranged',
             0: 'none',
-        } [id]
+        }[id]
 
     @staticmethod
     def GetBonus(id):
@@ -216,7 +222,8 @@ class CardPlay:
             1001886: 1.06,
             1001887: 1.06,
             0: 0,
-        } [id]
+        }[id]
+
 
 class SearchWindow:
     def __init__(self, start, end, duration, step):
@@ -225,8 +232,9 @@ class SearchWindow:
         self.duration = duration
         self.step = step
 
+
 class DrawWindow:
-    def __init__(self, source = 0, start = 0, end = 0, castId = -2, buffId = 0):
+    def __init__(self, source=0, start=0, end=0, castId=-2, buffId=0):
         self.source = source
         self.start = start
         self.end = end
@@ -236,7 +244,7 @@ class DrawWindow:
 
         self.startEvent = None
         self.endEvent = None
-        
+
         if self.buffId != 0:
             self.cardDrawn = DrawWindow.GetCard(self.buffId)
         if self.buffId != 0 and self.castId == -2:
@@ -251,13 +259,13 @@ class DrawWindow:
             self.startId = DrawWindow.ConvertID(self.buffId)
         else:
             self.startId = -1
-        
+
         self.endId = None
-        
+
     def __str__(self):
         return f'From {self.startEvent} at {self.start} to {self.endEvent} at {self.end}'
 
-    def to_dict(self): 
+    def to_dict(self):
         return {
             'source': self.source,
             'type': 'draw',
@@ -268,7 +276,7 @@ class DrawWindow:
         }
 
     def Duration(self):
-        return(timedelta(self.end-self.start).total_seconds)
+        return (timedelta(self.end-self.start).total_seconds)
 
     @staticmethod
     def GetName(id):
@@ -277,7 +285,7 @@ class DrawWindow:
             0: 'Fight Start',
             3590: 'Draw',
             16552: 'Divination',
-            3593: 'Redraw', # TODO: Need to check if this is still the correct ID for Redraw
+            3593: 'Redraw',  # TODO: Need to check if this is still the correct ID for Redraw
         }[id]
 
     @staticmethod
@@ -304,7 +312,7 @@ class DrawWindow:
 
     @staticmethod
     def GetBuff(buffId):
-                return {
+        return {
             1000913: 'Balance Drawn',
             1000914: 'Bole Drawn',
             1000915: 'Arrow Drawn',
@@ -312,6 +320,7 @@ class DrawWindow:
             1000917: 'Ewer Drawn',
             1000918: 'Spire Drawn'
         }[buffId]
+
 
 class FightInfo:
     def __init__(self, report_id, fight_number, start_time, end_time, name, kill):
@@ -334,13 +343,13 @@ class FightInfo:
             'length': self.ToString(),
         }
 
-    def Duration(self, time = None):
+    def Duration(self, time=None):
         if time is not None:
             return timedelta(milliseconds=(time-self.start)).total_seconds()
         else:
             return timedelta(milliseconds=(self.end-self.start)).total_seconds()
 
-    def ToString(self, time = None):
+    def ToString(self, time=None):
         if time is not None:
             return str(timedelta(milliseconds=(time-self.start)))[2:11]
         else:
@@ -348,9 +357,10 @@ class FightInfo:
 
     def PrintDamageObject(self, actor_list, damage_obj):
         format_string = '{:>9}   {:<25}...{:>9}'
-        print(format_string.format(self.TimeElapsed(damage_obj[0]), actor_list.actors.loc[damage_obj[1], 'name'], damage_obj[2] ))
+        print(format_string.format(self.TimeElapsed(
+            damage_obj[0]), actor_list.actors.loc[damage_obj[1], 'name'], damage_obj[2]))
 
-    def TimeElapsed(self, time = None):
+    def TimeElapsed(self, time=None):
         if time is not None:
             return time-self.start
         else:
@@ -359,13 +369,14 @@ class FightInfo:
     def TimeDelta(self, time):
         return timedelta(milliseconds=(time - self.start))
 
+
 class BurstDamageCollection:
     def __init__(self, df, duration):
         self.df = df
         self.duration = duration
 
     # this returns a tuple with the (timestamp, id, damage) set which is the
-    # max 
+    # max
     def get_max(self, pid=None, time=None, limit=0):
         # Options:
         # (1) if there is no time and no id then find overall max
@@ -380,7 +391,8 @@ class BurstDamageCollection:
         if limit > 0:
             # array = np.array(self.df.values.tolist())
             # mod_df = pd.DataFrame(np.where(array > limit, 0, array).tolist(), index=self.df.index, columns=self.df.columns)
-            mod_df = self.df.apply(lambda x: [y if y < limit else 0 for y in x])
+            mod_df = self.df.apply(
+                lambda x: [y if y < limit else 0 for y in x])
         else:
             mod_df = self.df
 
