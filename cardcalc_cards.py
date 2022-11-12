@@ -1,26 +1,24 @@
-"""
-Calculates the optimal AST Card Usage
-"""
+# """
+# Calculates the optimal AST Card Usage
+# """
 
-"""
-I want to 
-CURRENT GOAL: reach goal but could be interesting 
-    to check if there was a better person/time to play
-    the card in the window between draws
-ADDTL REACH GOAL: create a timeline of damage snapshot in 
-    the next X seconds (15s for card but could be useful 
-    for other tools to have this variable)
-"""
-
-
-"""
-For the initial version of this the following simple rules are use.
-Every event starts with one of the following and ends with the same:
- (1) Draw
-Redraws and plays are ignored
-"""
+# """
+# I want to
+# CURRENT GOAL: reach goal but could be interesting
+#     to check if there was a better person/time to play
+#     the card in the window between draws
+# ADDTL REACH GOAL: create a timeline of damage snapshot in
+#     the next X seconds (15s for card but could be useful
+#     for other tools to have this variable)
+# """
 
 
+# """
+# For the initial version of this the following simple rules are use.
+# Every event starts with one of the following and ends with the same:
+#  (1) Draw
+# Redraws and plays are ignored
+# """
 
 
 from datetime import timedelta
@@ -29,6 +27,8 @@ import pandas as pd
 from cardcalc_data import Player, Pet, CardPlay, DrawWindow, FightInfo, BurstDamageCollection, CardCalcException, ActorList, SearchWindow
 from cardcalc_fflogsapi import get_card_draw_events, get_card_play_events, get_actor_lists, get_fight_info, get_damage_events
 from cardcalc_damage import calc_snapshot_damage, compute_total_damage, search_burst_window, compute_remove_card_damage, cleanup_hit_data, cleanup_prepare_events
+
+
 def _handle_draw_events(card_events, start_time, end_time):
 
     active_window = DrawWindow(start=start_time, castId=0)
