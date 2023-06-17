@@ -4,7 +4,8 @@ import json
 from collections import OrderedDict
 from urllib.parse import urlparse, parse_qs
 
-from flask import Flask, render_template, request, redirect, send_from_directory, url_for
+from flask import Flask, render_template, request, \
+    redirect, send_from_directory, url_for
 
 from google.cloud import bigquery
 
@@ -16,14 +17,14 @@ app = Flask(__name__)
 LAST_CALC_DATE = datetime.fromtimestamp(1663886556)
 token = get_bearer_token()
 
-client = bigquery.Client('astcardcalc')
-Reports = client.get_table('astcardcalc.Reports.Reports')
-Counts = client.get_table('astcardcalc.Reports.Counts')
+client = bigquery.Client('astcardcalc-vm')
+Reports = client.get_table('astcardcalc-vm.Reports.Reports')
+Counts = client.get_table('astcardcalc-vm.Reports.Counts')
 
 
 def get_count():
     count_query = client.query(
-        "SELECT * FROM `astcardcalc.Reports.Counts`;").result()
+        "SELECT * FROM `astcardcalc-vm.Reports.Counts`;").result()
 
     report_count = next(count_query).get('total_reports')
     return report_count
@@ -33,7 +34,7 @@ def increment_count():
     report_count = get_count() + 1
 
     sql = """
-UPDATE `astcardcalc.Reports.Counts`
+UPDATE `astcardcalc-vm.Reports.Counts`
 SET total_reports = {}
 WHERE total_reports > 0;
 """.format(report_count)
@@ -43,14 +44,14 @@ WHERE total_reports > 0;
 
 
 def prune_reports():
-    Reports = client.get_table('astcardcalc.Reports.Reports')
+    Reports = client.get_table('astcardcalc-vm.Reports.Reports')
     if Reports.num_rows > 10000:
-        sql_get = """SELECT computed FROM `astcardcalc.Reports.Reports`
+        sql_get = """SELECT computed FROM `astcardcalc-vm.Reports.Reports`
     ORDER BY computed ASC
     LIMIT 1 OFFSET 500"""
         time_query = client.query(sql_get).result()
         computed_cutoff = next(time_query).get('computed')
-        sql_delete = """DELETE FROM `astcardcalc.Reports.Reports`
+        sql_delete = """DELETE FROM `astcardcalc-vm.Reports.Reports`
 WHERE computed < {}""".format(computed_cutoff)
         client.query(sql_delete).result()
 
@@ -65,7 +66,9 @@ def homepage():
         except CardCalcException as exception:
             return render_template('error.html', exception=exception)
 
-        return redirect(url_for('calc', report_id=report_id, fight_id=fight_id))
+        return redirect(url_for('calc',
+                                report_id=report_id,
+                                fight_id=fight_id))
 
     return render_template('home.html')
 
@@ -77,7 +80,8 @@ def about():
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/png')
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/png')
 
 
 @app.route('/<string:report_id>/<int:fight_id>')
@@ -91,7 +95,7 @@ def calc(report_id, fight_id):
     report = None
 
     sql = """
-SELECT * FROM `astcardcalc.Reports.Reports`
+SELECT * FROM `astcardcalc-vm.Reports.Reports`
 WHERE report_id='{}' AND fight_id={}
 ORDER BY computed DESC;
 """.format(report_id, fight_id)
@@ -141,6 +145,7 @@ ORDER BY computed DESC;
             'computed': datetime.now(),
         }
 
+        print(sql_report)
         row_result = client.insert_rows_json(Reports, [sql_report])
         print(row_result)
         increment_count()
@@ -175,7 +180,6 @@ ORDER BY computed DESC;
                 'computed': datetime.now(),
             }
             row_result = client.insert_rows_json(Reports, [sql_report])
-            print(row_result)
 
     report['results'] = {int(k): v for k, v in report['results'].items()}
     report['actors'] = {int(k): v for k, v in report['actors'].items()}
