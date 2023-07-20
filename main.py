@@ -1,4 +1,5 @@
 from datetime import datetime
+import pytz
 import os
 import json
 from collections import OrderedDict
@@ -14,7 +15,7 @@ from cardcalc_data import CardCalcException
 from cardcalc_cards import cardcalc
 
 app = Flask(__name__)
-LAST_CALC_DATE = datetime.fromtimestamp(1663886556)
+LAST_CALC_DATE = pytz.UTC.localize(datetime.utcfromtimestamp(1663886556))
 token = get_bearer_token()
 
 client = bigquery.Client('astcardcalc-vm')
@@ -145,12 +146,17 @@ ORDER BY computed DESC;
             'computed': datetime.now(),
         }
 
-        print(sql_report)
+        # print(sql_report)
         row_result = client.insert_rows_json(Reports, [sql_report])
-        print(row_result)
+        # print(row_result)
         increment_count()
 
     else:
+        # print(sql_report['computed'])
+        # print(type(sql_report['computed']))
+        # print(LAST_CALC_DATE)
+        # print(type(LAST_CALC_DATE))
+
         # Recompute if no computed timestamp
         if sql_report['computed'] < LAST_CALC_DATE:
             try:

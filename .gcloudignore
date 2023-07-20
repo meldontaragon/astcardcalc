@@ -22,6 +22,7 @@ profiling/*
 env_variables.yaml
 .exports
 local-test.sh
+old_reqs.txt
 
 # backup files
 *~
@@ -29,9 +30,11 @@ local-test.sh
 
 # local ideas/dev file
 .idea
+.vscode
 
 # Python pycache:
 .python-version
 __pycache__/
+
 # Ignored by the build system
 /setup.cfg
